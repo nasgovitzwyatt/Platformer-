@@ -15,7 +15,7 @@ const keys = {};
 function init() {
     player.x = 180; player.y = 500; player.velX = 0; player.velY = 0;
     cameraY = 0; maxHeight = 0;
-    platforms = [{ x: 0, y: 580, width: 400, height: 20, speed: 0, type: 'normal', timer: null }];
+    platforms = [{ x: 0, y: 580, width: 400, height: 20, speed: 0, type: 'normal', isCracking: false }];
     generatePlatforms();
     gameActive = true;
     overlay.style.display = "none";
@@ -24,28 +24,33 @@ function init() {
 
 function generatePlatforms() {
     let lastY = platforms[platforms.length - 1].y;
-    while (platforms.length < 150) {
-        // Difficulty scaling: platforms get slightly further apart as you go up
-        let difficultyGap = Math.min(40, (500 - lastY) / 100); 
+    while (platforms.length < 200) {
+        let difficultyGap = Math.min(45, (500 - lastY) / 100); 
         lastY -= (90 + difficultyGap) + Math.random() * 40; 
         
         let heightMeters = (500 - lastY) / 10;
         let type = 'normal';
         let roll = Math.random();
 
-        // Randomize types based on height
-        if (heightMeters > 50) {
-            if (roll < 0.2) type = 'crumble'; // 20% chance for crumbling
-            else if (heightMeters > 140 && roll < 0.5) type = 'ice'; // Ice appears after 140m
+        // Determine Type
+        if (heightMeters > 60) {
+            if (roll < 0.25) type = 'crumble'; 
+            else if (heightMeters > 140 && roll < 0.45) type = 'ice';
+        }
+
+        // Determine Movement (The Fix: Only 40% move after 100m)
+        let moveSpeed = 0;
+        if (heightMeters > 100 && Math.random() < 0.4) {
+            moveSpeed = (Math.random() > 0.5 ? 2 : -2) + (heightMeters / 300);
         }
 
         platforms.push({
             x: Math.random() * 320, y: lastY,
-            width: Math.max(50, 80 - (heightMeters / 20)), // Platforms get narrower as you go up
+            width: Math.max(45, 80 - (heightMeters / 25)), 
             height: 12,
             type: type,
-            speed: heightMeters > 100 ? (Math.random() > 0.5 ? 2 + (heightMeters/200) : -2 - (heightMeters/200)) : 0,
-            crackTimer: 2500, // 2.5 seconds in milliseconds
+            speed: moveSpeed, 
+            crackTimer: 2500,
             isCracking: false
         });
     }
@@ -70,27 +75,21 @@ function update() {
 
     player.onIce = false; 
 
-    // Filter out platforms that have fully "crumbled"
     platforms = platforms.filter(plat => {
-        // If it's cracking, reduce the timer
         if (plat.isCracking) {
-            plat.crackTimer -= 16.6; // Subtract approx 1 frame in ms
-            if (plat.crackTimer <= 0) return false; // Remove platform
+            plat.crackTimer -= 16.6;
+            if (plat.crackTimer <= 0) return false;
         }
 
-        // Standard Collision
         if (player.velY > 0 && player.y + 30 > plat.y && player.y + 30 < plat.y + 15 + player.velY &&
             player.x + 30 > plat.x && player.x < plat.x + plat.width) {
-            
             player.jumping = false; 
             player.velY = 0; 
             player.y = plat.y - 30;
-            
             if (plat.type === 'ice') player.onIce = true;
             if (plat.type === 'crumble') plat.isCracking = true;
         }
 
-        // Move platforms
         if (plat.speed !== 0) {
             plat.x += plat.speed;
             if (plat.x < 0 || plat.x + plat.width > canvas.width) plat.speed *= -1;
@@ -120,7 +119,6 @@ function draw() {
     platforms.forEach(p => {
         if (p.type === 'ice') ctx.fillStyle = "#80deea";
         else if (p.type === 'crumble') {
-            // As it cracks, it turns from Brown to Dark Red
             let colorVal = Math.floor((p.crackTimer / 2500) * 150);
             ctx.fillStyle = `rgb(${200 - colorVal}, 100, 50)`;
         } 
@@ -128,7 +126,6 @@ function draw() {
 
         ctx.fillRect(p.x, p.y, p.width, p.height);
 
-        // Visual feedback for cracking
         if (p.isCracking) {
             ctx.strokeStyle = "white";
             ctx.beginPath();
@@ -165,3 +162,23 @@ window.addEventListener("keydown", e => {
 });
 window.addEventListener("keyup", e => keys[e.code] = false);
 startBtn.onclick = init;
+
+// Touch controls for mobile
+const handleTouch = (id, key, active) => {
+    const btn = document.getElementById(id);
+    btn.addEventListener("touchstart", (e) => { 
+        e.preventDefault(); 
+        keys[key] = active; 
+        if(id === 'jumpBtn' && !player.jumping) {
+            player.velY = JUMP_FORCE; 
+            player.jumping = true;
+        }
+    });
+    btn.addEventListener("touchend", (e) => { 
+        e.preventDefault(); 
+        keys[key] = !active; 
+    });
+};
+handleTouch("leftBtn", "ArrowLeft", true);
+handleTouch("rightBtn", "ArrowRight", true);
+handleTouch("jumpBtn", "Space", true);
