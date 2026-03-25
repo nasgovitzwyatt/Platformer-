@@ -1,0 +1,24 @@
+body {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-height: 100vh;
+    margin: 0;
+    background: linear-gradient(to bottom, #87CEEB, #E0F7FA); /* Sky gradient */
+    font-family: 'Segoe UI', sans-serif;
+    overflow: hidden;
+}
+
+#scoreBoard {
+    font-size: 24px;
+    font-weight: bold;
+    margin-bottom: 10px;
+    color: #01579b;
+}
+
+canvas {
+    background-color: rgba(255, 255, 255, 0.3);
+    border: 4px solid #01579b;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+}
