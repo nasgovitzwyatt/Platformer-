@@ -23,9 +23,9 @@ function init() {
 
 function generatePlatforms() {
     let lastY = platforms[platforms.length - 1].y;
-    while (platforms.length < 30) {
+    while (platforms.length < 50) {
         lastY -= 120 + Math.random() * 40;
-        let isMoving = (500 - lastY) / 10 > 100; // Moving platforms after 100m
+        let isMoving = (500 - lastY) / 10 > 100;
         platforms.push({
             x: Math.random() * 300, y: lastY,
             width: 80, height: 10,
@@ -37,23 +37,30 @@ function generatePlatforms() {
 function update() {
     if (!gameActive) return;
 
-    if (keys["ArrowRight"]) player.velX = 5;
-    else if (keys["ArrowLeft"]) player.velX = -5;
+    if (keys["ArrowRight"] || keys["KeyD"]) player.velX = 5;
+    else if (keys["ArrowLeft"] || keys["KeyA"]) player.velX = -5;
     else player.velX *= 0.8;
 
     player.velY += gravity;
     player.x += player.velX;
     player.y += player.velY;
 
-    // Platform logic & Moving Platforms
+    // Boundary wrap (loop around sides)
+    if (player.x < -30) player.x = canvas.width;
+    if (player.x > canvas.width) player.x = -30;
+
+    // Platform logic
     platforms.forEach(plat => {
         if (plat.speed !== 0) {
             plat.x += plat.speed;
             if (plat.x < 0 || plat.x + plat.width > canvas.width) plat.speed *= -1;
         }
-        if (player.velY > 0 && player.y + 30 > plat.y && player.y + 30 < plat.y + 10 + player.velY &&
+        // Collision check
+        if (player.velY > 0 && player.y + 30 > plat.y && player.y + 30 < plat.y + 15 + player.velY &&
             player.x + 30 > plat.x && player.x < plat.x + plat.width) {
-            player.jumping = false; player.velY = 0; player.y = plat.y - 30;
+            player.jumping = false; 
+            player.velY = 0; 
+            player.y = plat.y - 30;
         }
     });
 
@@ -65,7 +72,7 @@ function update() {
         document.getElementById("scoreBoard").innerText = `Height: ${maxHeight}m`;
     }
 
-    if (player.y > cameraY + canvas.height) gameOver();
+    if (player.y > cameraY + canvas.height + 100) gameOver();
 
     draw();
     requestAnimationFrame(update);
@@ -75,8 +82,19 @@ function draw() {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     ctx.save();
     ctx.translate(0, -cameraY);
+    
+    // Draw Platforms
     ctx.fillStyle = "#455a64";
-    platforms.forEach(p => ctx.fillRect(p.x, p.y, p.width, p.height));
+    platforms.forEach(p => {
+        ctx.fillRect(p.x, p.y, p.width, p.height);
+        if (p.speed !== 0) { // Add a little detail to moving platforms
+            ctx.fillStyle = "#fb8c00";
+            ctx.fillRect(p.x, p.y, 5, 10);
+            ctx.fillStyle = "#455a64";
+        }
+    });
+
+    // Draw Player
     ctx.fillStyle = "#ff5722";
     ctx.fillRect(player.x, player.y, 30, 30);
     ctx.restore();
@@ -94,12 +112,30 @@ function gameOver() {
     overlay.style.display = "block";
 }
 
-// Input Handlers
-window.addEventListener("keydown", e => keys[e.code] = true);
+// Fixed Input Handlers
+window.addEventListener("keydown", e => {
+    if (["Space", "ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight"].includes(e.code)) {
+        e.preventDefault(); // Stop page scrolling
+    }
+    keys[e.code] = true;
+    
+    // Jump trigger
+    if ((e.code === "Space" || e.code === "ArrowUp" || e.code === "KeyW") && !player.jumping) {
+        player.velY = -12;
+        player.jumping = true;
+    }
+});
+
 window.addEventListener("keyup", e => keys[e.code] = false);
+
 startBtn.onclick = init;
-document.getElementById("jumpBtn").ontouchstart = () => { if(!player.jumping){player.velY=-12; player.jumping=true;} };
-document.getElementById("leftBtn").ontouchstart = () => keys["ArrowLeft"] = true;
+
+// Touch controls for mobile
+document.getElementById("jumpBtn").ontouchstart = (e) => {
+    e.preventDefault();
+    if(!player.jumping){player.velY=-12; player.jumping=true;} 
+};
+document.getElementById("leftBtn").ontouchstart = (e) => { e.preventDefault(); keys["ArrowLeft"] = true; };
 document.getElementById("leftBtn").ontouchend = () => keys["ArrowLeft"] = false;
-document.getElementById("rightBtn").ontouchstart = () => keys["ArrowRight"] = true;
+document.getElementById("rightBtn").ontouchstart = (e) => { e.preventDefault(); keys["ArrowRight"] = true; };
 document.getElementById("rightBtn").ontouchend = () => keys["ArrowRight"] = false;
