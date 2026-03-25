@@ -6,13 +6,14 @@ const overlay = document.getElementById("overlay");
 let gravity = 0.5, cameraY = 0, maxHeight = 0, gameActive = false;
 let highScore = localStorage.getItem("parkourHigh") || 0;
 let playerColor = "#ff5722";
-let hue = 0; // For rainbow skin
+let hue = 0; 
 
 const JUMP_FORCE = -13.5; 
 const player = { x: 180, y: 500, width: 30, height: 30, velX: 0, velY: 0, jumping: false, onIce: false };
 let platforms = [];
 const keys = {};
 
+// --- UI & SKINS ---
 function updateUI() {
     document.getElementById("highScoreBoard").innerText = `Best: ${highScore}m`;
     const unlocks = [0, 50, 100, 150, 200, 500];
@@ -31,13 +32,16 @@ function updateUI() {
 }
 
 function changeSkin(color, req) {
-    if (highScore >= req) playerColor = color;
+    if (highScore >= req) {
+        playerColor = color;
+    }
 }
 
+// --- GAME LOGIC ---
 function init() {
     player.x = 180; player.y = 500; player.velX = 0; player.velY = 0;
     cameraY = 0; maxHeight = 0;
-    platforms = [{ x: 0, y: 580, width: 400, height: 20, speed: 0, type: 'normal' }];
+    platforms = [{ x: 0, y: 580, width: 400, height: 20, speed: 0, type: 'normal', isCracking: false }];
     generatePlatforms();
     gameActive = true;
     overlay.style.display = "none";
@@ -118,7 +122,7 @@ function update() {
     }
     if (player.y > cameraY + canvas.height + 100) gameOver();
 
-    hue++; // Rainbow cycle
+    hue++; 
     draw();
     requestAnimationFrame(update);
 }
@@ -157,14 +161,8 @@ function gameOver() {
     updateUI();
 }
 
-// Input Handlers
+// --- INPUT HANDLERS (PC & MOBILE) ---
 window.addEventListener("keydown", e => {
     if (["Space", "ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight"].includes(e.code)) e.preventDefault();
     keys[e.code] = true;
     if ((e.code === "Space" || e.code === "ArrowUp" || e.code === "KeyW") && !player.jumping) {
-        player.velY = JUMP_FORCE; player.jumping = true;
-    }
-});
-window.addEventListener("keyup", e => keys[e.code] = false);
-startBtn.onclick = init;
-updateUI(); // Run once at start to show locks
