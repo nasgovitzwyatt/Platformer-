@@ -7,14 +7,16 @@ let gravity = 0.5, cameraY = 0, maxHeight = 0, gameActive = false;
 let highScore = localStorage.getItem("parkourHigh") || 0;
 document.getElementById("highScoreBoard").innerText = `Best: ${highScore}m`;
 
-const player = { x: 180, y: 500, width: 30, height: 30, velX: 0, velY: 0, jumping: false };
+// Boosted jump power from -12 to -13.5 to reach higher platforms
+const JUMP_FORCE = -13.5; 
+const player = { x: 180, y: 500, width: 30, height: 30, velX: 0, velY: 0, jumping: false, onIce: false };
 let platforms = [];
 const keys = {};
 
 function init() {
     player.x = 180; player.y = 500; player.velX = 0; player.velY = 0;
     cameraY = 0; maxHeight = 0;
-    platforms = [{ x: 0, y: 580, width: 400, height: 20, speed: 0 }];
+    platforms = [{ x: 0, y: 580, width: 400, height: 20, speed: 0, type: 'normal' }];
     generatePlatforms();
     gameActive = true;
     overlay.style.display = "none";
@@ -23,13 +25,19 @@ function init() {
 
 function generatePlatforms() {
     let lastY = platforms[platforms.length - 1].y;
-    while (platforms.length < 50) {
-        lastY -= 120 + Math.random() * 40;
-        let isMoving = (500 - lastY) / 10 > 100;
+    while (platforms.length < 100) {
+        // Narrowed the gap (max 140 instead of 160) so platforms are always reachable
+        lastY -= 100 + Math.random() * 40; 
+        let heightMeters = (500 - lastY) / 10;
+        
+        let type = 'normal';
+        if (heightMeters > 140 && Math.random() > 0.5) type = 'ice';
+
         platforms.push({
             x: Math.random() * 300, y: lastY,
-            width: 80, height: 10,
-            speed: isMoving ? (Math.random() > 0.5 ? 2 : -2) : 0
+            width: 80, height: 12,
+            type: type,
+            speed: heightMeters > 100 ? (Math.random() > 0.5 ? 2 : -2) : 0
         });
     }
 }
@@ -37,30 +45,39 @@ function generatePlatforms() {
 function update() {
     if (!gameActive) return;
 
-    if (keys["ArrowRight"] || keys["KeyD"]) player.velX = 5;
-    else if (keys["ArrowLeft"] || keys["KeyA"]) player.velX = -5;
-    else player.velX *= 0.8;
+    // Movement Logic with Slippery Physics
+    let currentFriction = player.onIce ? 0.98 : 0.8;
+    let accel = player.onIce ? 0.3 : 1;
+
+    if (keys["ArrowRight"] || keys["KeyD"]) player.velX += accel;
+    else if (keys["ArrowLeft"] || keys["KeyA"]) player.velX -= accel;
+    
+    player.velX *= currentFriction;
+    // Cap speed so ice doesn't launch you too fast
+    if (player.velX > 6) player.velX = 6;
+    if (player.velX < -6) player.velX = -6;
 
     player.velY += gravity;
     player.x += player.velX;
     player.y += player.velY;
 
-    // Boundary wrap (loop around sides)
     if (player.x < -30) player.x = canvas.width;
     if (player.x > canvas.width) player.x = -30;
 
-    // Platform logic
+    player.onIce = false; // Reset every frame
+
     platforms.forEach(plat => {
         if (plat.speed !== 0) {
             plat.x += plat.speed;
             if (plat.x < 0 || plat.x + plat.width > canvas.width) plat.speed *= -1;
         }
-        // Collision check
+
         if (player.velY > 0 && player.y + 30 > plat.y && player.y + 30 < plat.y + 15 + player.velY &&
             player.x + 30 > plat.x && player.x < plat.x + plat.width) {
             player.jumping = false; 
             player.velY = 0; 
             player.y = plat.y - 30;
+            if (plat.type === 'ice') player.onIce = true;
         }
     });
 
@@ -83,18 +100,18 @@ function draw() {
     ctx.save();
     ctx.translate(0, -cameraY);
     
-    // Draw Platforms
-    ctx.fillStyle = "#455a64";
     platforms.forEach(p => {
+        // Blue for Ice, Grey for Normal
+        ctx.fillStyle = p.type === 'ice' ? "#80deea" : "#455a64";
         ctx.fillRect(p.x, p.y, p.width, p.height);
-        if (p.speed !== 0) { // Add a little detail to moving platforms
-            ctx.fillStyle = "#fb8c00";
-            ctx.fillRect(p.x, p.y, 5, 10);
-            ctx.fillStyle = "#455a64";
+        
+        // Add a "shimmer" to ice platforms
+        if (p.type === 'ice') {
+            ctx.fillStyle = "rgba(255,255,255,0.5)";
+            ctx.fillRect(p.x, p.y, p.width, 3);
         }
     });
 
-    // Draw Player
     ctx.fillStyle = "#ff5722";
     ctx.fillRect(player.x, player.y, 30, 30);
     ctx.restore();
@@ -112,30 +129,23 @@ function gameOver() {
     overlay.style.display = "block";
 }
 
-// Fixed Input Handlers
 window.addEventListener("keydown", e => {
-    if (["Space", "ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight"].includes(e.code)) {
-        e.preventDefault(); // Stop page scrolling
-    }
+    if (["Space", "ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight"].includes(e.code)) e.preventDefault();
     keys[e.code] = true;
-    
-    // Jump trigger
     if ((e.code === "Space" || e.code === "ArrowUp" || e.code === "KeyW") && !player.jumping) {
-        player.velY = -12;
+        player.velY = JUMP_FORCE;
         player.jumping = true;
     }
 });
 
 window.addEventListener("keyup", e => keys[e.code] = false);
-
 startBtn.onclick = init;
 
-// Touch controls for mobile
-document.getElementById("jumpBtn").ontouchstart = (e) => {
-    e.preventDefault();
-    if(!player.jumping){player.velY=-12; player.jumping=true;} 
+// Touch controls
+const handleTouch = (id, key, active) => {
+    document.getElementById(id).ontouchstart = (e) => { e.preventDefault(); keys[key] = active; if(id==='jumpBtn'&&!player.jumping){player.velY=JUMP_FORCE; player.jumping=true;}};
+    document.getElementById(id).ontouchend = (e) => { e.preventDefault(); keys[key] = !active; };
 };
-document.getElementById("leftBtn").ontouchstart = (e) => { e.preventDefault(); keys["ArrowLeft"] = true; };
-document.getElementById("leftBtn").ontouchend = () => keys["ArrowLeft"] = false;
-document.getElementById("rightBtn").ontouchstart = (e) => { e.preventDefault(); keys["ArrowRight"] = true; };
-document.getElementById("rightBtn").ontouchend = () => keys["ArrowRight"] = false;
+handleTouch("leftBtn", "ArrowLeft", true);
+handleTouch("rightBtn", "ArrowRight", true);
+document.getElementById("jumpBtn").ontouchstart = (e) => { e.preventDefault(); if(!player.jumping){player.velY=JUMP_FORCE; player.jumping=true;} };
