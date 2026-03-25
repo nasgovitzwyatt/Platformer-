@@ -1,24 +1,15 @@
 body {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    min-height: 100vh;
-    margin: 0;
-    background: linear-gradient(to bottom, #87CEEB, #E0F7FA); /* Sky gradient */
-    font-family: 'Segoe UI', sans-serif;
-    overflow: hidden;
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    min-height: 100vh; margin: 0; background: #87CEEB; font-family: sans-serif; overflow: hidden;
 }
-
-#scoreBoard {
-    font-size: 24px;
-    font-weight: bold;
-    margin-bottom: 10px;
-    color: #01579b;
+#ui { display: flex; gap: 20px; margin-bottom: 5px; }
+#scoreBoard, #highScoreBoard { font-weight: bold; background: white; padding: 5px 15px; border-radius: 20px; }
+canvas { background: white; border: 4px solid #01579b; max-width: 95vw; height: auto; }
+#overlay {
+    position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+    background: rgba(255,255,255,0.9); padding: 30px; border-radius: 15px; text-align: center;
+    box-shadow: 0 0 20px rgba(0,0,0,0.2); z-index: 10;
 }
-
-canvas {
-    background-color: rgba(255, 255, 255, 0.3);
-    border: 4px solid #01579b;
-    box-shadow: 0 10px 30px rgba(0,0,0,0.1);
-}
+#startBtn { padding: 10px 20px; font-size: 18px; cursor: pointer; background: #ff5722; color: white; border: none; border-radius: 5px; }
+.controls { display: flex; gap: 10px; margin-top: 15px; }
+.control-btn { width: 70px; height: 70px; background: #333; color: white; border: none; border-radius: 10px; font-size: 18px; touch-action: manipulation; }
