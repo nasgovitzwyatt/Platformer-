@@ -162,7 +162,59 @@ function gameOver() {
 }
 
 // --- INPUT HANDLERS (PC & MOBILE) ---
+
+// 1. Prevent the "Pull-to-Refresh" and "Scrolling" gestures on mobile
+window.addEventListener("touchmove", (e) => {
+    if (gameActive) e.preventDefault();
+}, { passive: false });
+
+// 2. PC Keyboard Controls
 window.addEventListener("keydown", e => {
     if (["Space", "ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight"].includes(e.code)) e.preventDefault();
     keys[e.code] = true;
     if ((e.code === "Space" || e.code === "ArrowUp" || e.code === "KeyW") && !player.jumping) {
+        player.velY = JUMP_FORCE; player.jumping = true;
+    }
+});
+window.addEventListener("keyup", e => keys[e.code] = false);
+
+// 3. Start/Retry Button Fix
+const handleStart = (e) => {
+    e.preventDefault();
+    if (!gameActive) init();
+};
+startBtn.addEventListener("touchstart", handleStart, { passive: false });
+startBtn.onclick = init;
+
+// 4. Mobile D-Pad Logic
+const setupMobileBtn = (id, key) => {
+    const btn = document.getElementById(id);
+    if (!btn) return;
+
+    btn.addEventListener("touchstart", (e) => {
+        e.preventDefault();
+        if (id === "jumpBtn") {
+            if (!player.jumping) { player.velY = JUMP_FORCE; player.jumping = true; }
+        } else {
+            keys[key] = true;
+        }
+    }, { passive: false });
+
+    btn.addEventListener("touchend", (e) => {
+        e.preventDefault();
+        keys[key] = false;
+    }, { passive: false });
+};
+
+setupMobileBtn("leftBtn", "ArrowLeft");
+setupMobileBtn("rightBtn", "ArrowRight");
+setupMobileBtn("jumpBtn", "Space");
+
+// 5. Skin Button Fix
+document.querySelectorAll('.skin-btn').forEach(btn => {
+    btn.addEventListener("touchstart", (e) => {
+        btn.click(); // Manually trigger select
+    }, { passive: true });
+});
+
+updateUI(); 
