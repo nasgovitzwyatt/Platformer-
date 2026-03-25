@@ -3,14 +3,28 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Cube Parkour: Only Up</title>
+    <title>Cube Parkour Pro</title>
     <link rel="stylesheet" href="styles.css">
 </head>
 <body>
-    <h1>Cube Parkour</h1>
-    <div id="scoreBoard">Height: 0m</div>
+    <div id="ui">
+        <div id="scoreBoard">Height: 0m</div>
+        <div id="highScoreBoard">Best: 0m</div>
+    </div>
+
     <canvas id="gameCanvas" width="400" height="600"></canvas>
-    <p>Use Arrows to Move & Jump</p>
+
+    <div id="overlay">
+        <h2 id="statusText">CUBE PARKOUR</h2>
+        <button id="startBtn">START GAME</button>
+    </div>
+
+    <div class="controls">
+        <button class="control-btn" id="leftBtn">◀</button>
+        <button class="control-btn" id="jumpBtn">JUMP</button>
+        <button class="control-btn" id="rightBtn">▶</button>
+    </div>
+
     <script src="script.js"></script>
 </body>
 </html>
