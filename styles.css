@@ -7,9 +7,27 @@ body {
 canvas { background: white; border: 4px solid #01579b; max-width: 95vw; height: auto; }
 #overlay {
     position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
-    background: rgba(255,255,255,0.9); padding: 30px; border-radius: 15px; text-align: center;
-    box-shadow: 0 0 20px rgba(0,0,0,0.2); z-index: 10;
+    background: rgba(255,255,255,0.9); padding: 30px; border-radius: 15px; text-align: center; z-index: 10;
 }
 #startBtn { padding: 10px 20px; font-size: 18px; cursor: pointer; background: #ff5722; color: white; border: none; border-radius: 5px; }
 .controls { display: flex; gap: 10px; margin-top: 15px; }
 .control-btn { width: 70px; height: 70px; background: #333; color: white; border: none; border-radius: 10px; font-size: 18px; touch-action: manipulation; }
+
+/* Skin Menu */
+#skinMenu {
+    position: fixed; right: 10px; top: 50%; transform: translateY(-50%);
+    background: rgba(255, 255, 255, 0.9); padding: 10px; border-radius: 10px;
+    text-align: center; width: 75px; box-shadow: -2px 0 10px rgba(0,0,0,0.1);
+}
+#skinMenu h3 { font-size: 14px; margin: 0 0 10px 0; }
+.skin-grid { display: flex; flex-direction: column; gap: 8px; }
+.skin-btn { width: 100%; height: 35px; border: none; border-radius: 5px; cursor: pointer; font-weight: bold; color: white; font-size: 10px; }
+
+.skin-btn.locked { background: #bbb !important; cursor: not-allowed; opacity: 0.6; }
+
+#skin-orange { background: #ff5722; }
+#skin-blue { background: #2196f3; }
+#skin-green { background: #4caf50; }
+#skin-purple { background: #9c27b0; }
+#skin-gold { background: #ffcc00; color: black; }
+#skin-rainbow { background: linear-gradient(to right, red, orange, yellow, green, blue, purple); }
