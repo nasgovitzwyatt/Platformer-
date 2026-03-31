@@ -22,26 +22,15 @@ let hue = 0, windForce = 0;
 
 const JUMP_FORCE = -13.5; 
 const BOUNCE_FORCE = -22; 
-const player = { x: 180, y: 500, width: 30, height: 30, velX: 0, velY: 0, jumping: false, onIce: false };
+const player = { x: 180, y: 500, width: 30, height: 30, velX: 0, velY: 0, jumping: false, onIce: false, conveyorForce: 0 };
 let platforms = [];
 const keys = {};
 
 // --- GUI NAVIGATION ---
 startBtn.onclick = () => { init(); };
-
-skinMenuBtn.onclick = () => { 
-    skinMenu.style.display = skinMenu.style.display === "none" ? "block" : "none";
-};
-
-settingsBtn.onclick = () => { 
-    mainMenu.style.display = "none";
-    settingsModal.style.display = "flex";
-};
-
-backBtn.onclick = () => { 
-    settingsModal.style.display = "none";
-    mainMenu.style.display = "flex";
-};
+skinMenuBtn.onclick = () => { skinMenu.style.display = skinMenu.style.display === "none" ? "block" : "none"; };
+settingsBtn.onclick = () => { mainMenu.style.display = "none"; settingsModal.style.display = "flex"; };
+backBtn.onclick = () => { settingsModal.style.display = "none"; mainMenu.style.display = "flex"; };
 
 // --- REBINDING SYSTEM ---
 let bindingAction = null;
@@ -51,85 +40,51 @@ const bindButtons = {
     Right: document.getElementById("bindRight")
 };
 
-// Initialize button text
 Object.keys(bindButtons).forEach(action => {
     bindButtons[action].innerText = config[action];
-    
-    bindButtons[action].onclick = (e) => {
-        // Clear any other active binding states
-        Object.values(bindButtons).forEach(b => {
-            b.classList.remove("waiting");
-            b.innerText = config[Object.keys(bindButtons).find(key => bindButtons[key] === b)];
-        });
-
+    bindButtons[action].onclick = () => {
+        Object.values(bindButtons).forEach(b => b.classList.remove("waiting"));
         bindingAction = action;
         bindButtons[action].innerText = "...";
         bindButtons[action].classList.add("waiting");
-        bindButtons[action].blur(); // Prevent spacebar from re-triggering click
+        bindButtons[action].blur();
     };
 });
 
 // --- INPUT HANDLING ---
 window.addEventListener("keydown", e => {
-    // If we are currently rebinding a key
     if (bindingAction) {
         e.preventDefault();
-        
-        const newKey = e.code;
-        config[bindingAction] = newKey;
-        localStorage.setItem("key" + bindingAction, newKey);
-        
-        bindButtons[bindingAction].innerText = newKey;
+        config[bindingAction] = e.code;
+        localStorage.setItem("key" + bindingAction, e.code);
+        bindButtons[bindingAction].innerText = e.code;
         bindButtons[bindingAction].classList.remove("waiting");
-        
         bindingAction = null;
         return;
     }
-    
-    // Prevent scrolling for game keys
-    if ([config.Jump, config.Left, config.Right, "ArrowUp", "Space"].includes(e.code)) {
-        e.preventDefault();
-    }
-    
-    // Player Jump
+    if ([config.Jump, config.Left, config.Right, "ArrowUp", "Space"].includes(e.code)) e.preventDefault();
     if ((e.code === config.Jump || e.code === "ArrowUp") && !player.jumping && gameActive) {
         player.velY = JUMP_FORCE; player.jumping = true;
     }
-    
     keys[e.code] = true;
 });
-
-window.addEventListener("keyup", e => {
-    keys[e.code] = false;
-});
+window.addEventListener("keyup", e => { keys[e.code] = false; });
 
 // --- GAME LOGIC ---
-
 function updateUI() {
     document.getElementById("highScoreBoard").innerText = `Best: ${highScore}m`;
     const unlocks = [0, 50, 100, 150, 200, 250, 300, 350, 400, 450, 500, 600, 700, 800, 900, 1000];
     const ids = ["skin-orange", "skin-blue", "skin-green", "skin-purple", "skin-gold", "skin-mint", "skin-striped", "skin-camo", "skin-ghost", "skin-lava", "skin-rainbow", "skin-neon", "skin-diamond", "skin-ruby", "skin-emerald", "skin-void"];
-    
     ids.forEach((id, i) => {
         const btn = document.getElementById(id);
         if (btn) {
-            if (highScore >= unlocks[i]) {
-                btn.classList.remove("locked");
-                btn.innerText = "SELECT";
-            } else {
-                btn.classList.add("locked");
-                btn.innerText = unlocks[i] + "m";
-            }
+            if (highScore >= unlocks[i]) { btn.classList.remove("locked"); btn.innerText = "SELECT"; }
+            else { btn.classList.add("locked"); btn.innerText = unlocks[i] + "m"; }
         }
     });
 }
 
-function changeSkin(color, req) {
-    if (highScore >= req) {
-        playerColor = color;
-        skinMenu.style.display = "none";
-    }
-}
+function changeSkin(color, req) { if (highScore >= req) { playerColor = color; skinMenu.style.display = "none"; } }
 
 function init() {
     player.x = 180; player.y = 500; player.velX = 0; player.velY = 0;
@@ -137,11 +92,7 @@ function init() {
     platforms = [{ x: 0, y: 580, width: 400, height: 20, speed: 0, type: 'normal', isCracking: false }];
     generatePlatforms();
     gameActive = true;
-    
-    mainMenu.style.display = "none";
-    settingsModal.style.display = "none";
-    skinMenu.style.display = "none"; 
-    
+    mainMenu.style.display = "none"; settingsModal.style.display = "none"; skinMenu.style.display = "none"; 
     updateUI();
     update();
 }
@@ -156,12 +107,14 @@ function generatePlatforms() {
         
         if (h > 40) {
             if (roll < 0.12) type = 'tramp'; 
-            else if (roll < 0.28) type = 'crumble'; 
-            else if (h > 140 && roll < 0.45) type = 'ice';
+            else if (roll < 0.25) type = 'crumble'; 
+            else if (roll < 0.38) type = 'conveyor'; // New Treadmill Platform
+            else if (h > 140 && roll < 0.50) type = 'ice';
         }
 
         let moveSpeed = 0;
-        if (h > 100 && Math.random() < 0.45) {
+        // Only normal, tramp, or ice platforms move horizontally
+        if (type !== 'conveyor' && h > 100 && Math.random() < 0.45) {
             moveSpeed = (Math.random() > 0.5 ? 2.2 : -2.2) + (h / 350);
         }
 
@@ -169,14 +122,14 @@ function generatePlatforms() {
             x: Math.random() * 320, y: lastY,
             width: Math.max(40, 80 - (h / 35)), 
             height: 12, type: type, speed: moveSpeed, 
-            crackTimer: 2500, isCracking: false
+            crackTimer: 2500, isCracking: false,
+            beltDir: Math.random() > 0.5 ? 1.5 : -1.5 // Direction of treadmill pull
         });
     }
 }
 
 function update() {
     if (!gameActive) return;
-
     let h = Math.max(0, Math.floor((500 - player.y) / 10));
     
     if (h >= 1000) {
@@ -191,6 +144,8 @@ function update() {
     else if (keys[config.Left]) player.velX -= accel;
     
     player.velX *= friction;
+    player.velX += player.conveyorForce; // Apply the treadmill pull
+    
     player.velY += gravity;
     player.x += player.velX;
     player.y += player.velY;
@@ -199,12 +154,14 @@ function update() {
     if (player.x > canvas.width) player.x = -30;
 
     player.onIce = false; 
+    player.conveyorForce = 0; // Reset every frame
 
     platforms = platforms.filter(plat => {
         if (plat.isCracking) {
             plat.crackTimer -= 16.6;
             if (plat.crackTimer <= 0) return false;
         }
+        // Collision Detection
         if (player.velY > 0 && player.y + 30 > plat.y && player.y + 30 < plat.y + 15 + player.velY &&
             player.x + 30 > plat.x && player.x < plat.x + plat.width) {
             
@@ -215,6 +172,7 @@ function update() {
                 player.jumping = false; player.velY = 0; player.y = plat.y - 30;
                 if (plat.type === 'ice') player.onIce = true;
                 if (plat.type === 'crumble') plat.isCracking = true;
+                if (plat.type === 'conveyor') player.conveyorForce = plat.beltDir; // Apply pull
             }
         }
         if (plat.speed !== 0) {
@@ -230,7 +188,6 @@ function update() {
         document.getElementById("scoreBoard").innerText = `Height: ${maxHeight}m`;
     }
     if (player.y > cameraY + canvas.height + 100) gameOver();
-
     hue++; 
     draw();
     requestAnimationFrame(update);
@@ -248,11 +205,21 @@ function draw() {
             ctx.fillStyle = `rgb(${200 - c}, 100, 50)`;
         } 
         else if (p.type === 'tramp') ctx.fillStyle = "#e91e63";
+        else if (p.type === 'conveyor') ctx.fillStyle = "#757575"; // Grey for conveyor
         else ctx.fillStyle = "#455a64";
+        
         ctx.fillRect(p.x, p.y, p.width, p.height);
+
+        // Visual detail for Conveyor (Moving dashes)
+        if (p.type === 'conveyor') {
+            ctx.strokeStyle = "rgba(255,255,255,0.4)";
+            ctx.setLineDash([5, 5]);
+            ctx.lineDashOffset = (hue * p.beltDir * 2);
+            ctx.strokeRect(p.x + 2, p.y + 2, p.width - 4, p.height - 4);
+            ctx.setLineDash([]); // Reset dash
+        }
     });
 
-    // Drawing player skins
     if (playerColor === 'rainbow') ctx.fillStyle = `hsl(${hue}, 100%, 50%)`;
     else if (playerColor === 'striped') {
         let grad = ctx.createLinearGradient(player.x, player.y, player.x+30, player.y+30);
@@ -284,34 +251,22 @@ function draw() {
 
 function gameOver() {
     gameActive = false;
-    if (maxHeight > highScore) {
-        highScore = maxHeight;
-        localStorage.setItem("parkourHigh", highScore);
-    }
+    if (maxHeight > highScore) { highScore = maxHeight; localStorage.setItem("parkourHigh", highScore); }
     document.getElementById("statusText").innerText = "YOU FELL!";
     startBtn.innerText = "RETRY";
     mainMenu.style.display = "flex";
     updateUI();
 }
 
-// --- MOBILE BUTTONS ---
 const setupBtn = (id, action) => {
     const btn = document.getElementById(id);
     btn.addEventListener("touchstart", (e) => {
         e.preventDefault();
-        if (action === "Jump") { 
-            if (!player.jumping && gameActive) { 
-                player.velY = JUMP_FORCE; player.jumping = true; 
-            } 
-        }
+        if (action === "Jump") { if (!player.jumping && gameActive) { player.velY = JUMP_FORCE; player.jumping = true; } }
         else keys[config[action]] = true;
     }, { passive: false });
-    btn.addEventListener("touchend", (e) => { 
-        e.preventDefault(); 
-        keys[config[action]] = false; 
-    }, { passive: false });
+    btn.addEventListener("touchend", (e) => { e.preventDefault(); keys[config[action]] = false; }, { passive: false });
 };
-
 setupBtn("leftBtn", "Left");
 setupBtn("rightBtn", "Right");
 setupBtn("jumpBtn", "Jump");
