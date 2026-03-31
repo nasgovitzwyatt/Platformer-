@@ -37,10 +37,19 @@ function changeSkin(color, req) {
 // Game Initialization
 // ---------------------------
 function init() {
-    player.x = 180; player.y = 500; player.velX = 0; player.velY = 0;
-    cameraY = 0; maxHeight = 0; windForce = 0;
+    player.x = 180; 
+    player.y = 500; 
+    player.velX = 0; 
+    player.velY = 0;
+    cameraY = 0; 
+    maxHeight = 0; 
+    windForce = 0;
 
-    platforms = [{ x: 0, y: 580, width: 400, height: 20, type: 'normal' }];
+    // FLOOR PLATFORM
+    platforms = [{
+        x: 0, y: 580, width: 400, height: 20, type: 'normal', speed: 0, isCracking: false
+    }];
+
     generatePlatforms();
 
     gameActive = true;
@@ -55,8 +64,10 @@ function generatePlatforms() {
     while (platforms.length < 500) {
         let gap = Math.min(48, (500 - lastY) / 100);
         lastY -= (90 + gap) + Math.random() * 40;
+
         let h = (500 - lastY) / 10;
-        let type = 'normal', roll = Math.random();
+        let type = 'normal';
+        let roll = Math.random();
 
         if (h > 40) {
             if (roll < 0.12) type = 'tramp';
@@ -70,10 +81,14 @@ function generatePlatforms() {
         }
 
         platforms.push({
-            x: Math.random() * 320, y: lastY,
-            width: Math.max(40, 80 - (h / 35)),
-            height: 12, type: type, speed: moveSpeed,
-            crackTimer: 2500, isCracking: false
+            x: Math.random() * 320, 
+            y: lastY,
+            width: Math.max(40, 80 - (h / 35)), 
+            height: 12, 
+            type: type, 
+            speed: moveSpeed, 
+            crackTimer: 2500, 
+            isCracking: false
         });
     }
 }
@@ -84,7 +99,6 @@ function generatePlatforms() {
 function update() {
     if (!gameActive) return;
 
-    // Apply controls
     let friction = player.onIce ? 0.98 : 0.8;
     let accel = player.onIce ? 0.3 : 1;
     if (keys["ArrowRight"]) player.velX += accel;
@@ -102,10 +116,7 @@ function update() {
     player.onIce = false;
 
     platforms = platforms.filter(p => {
-        if (p.isCracking) {
-            p.crackTimer -= 16.6;
-            if (p.crackTimer <= 0) return false;
-        }
+        if (p.isCracking) { p.crackTimer -= 16.6; if (p.crackTimer <= 0) return false; }
 
         if (player.velY > 0 && player.y + 30 > p.y && player.y + 30 < p.y + 15 + player.velY &&
             player.x + 30 > p.x && player.x < p.x + p.width) {
@@ -141,7 +152,7 @@ function update() {
 }
 
 // ---------------------------
-// Drawing
+// Draw
 // ---------------------------
 function draw() {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
