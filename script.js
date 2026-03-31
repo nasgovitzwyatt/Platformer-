@@ -54,8 +54,7 @@ function updateUI() {
         const btn = document.getElementById(s.id);
         if (btn) {
             if (highScore >= s.req) {
-                btn.classList.remove("locked");
-                btn.innerText = (selectedSkinId === s.id) ? "ACTIVE" : "SELECT";
+                btn.classList.remove("locked"); btn.innerText = (selectedSkinId === s.id) ? "ACTIVE" : "SELECT";
                 btn.classList.toggle("selected", selectedSkinId === s.id);
             } else { btn.classList.add("locked"); btn.innerText = s.req + "m"; }
         }
@@ -96,20 +95,31 @@ function init() {
 function generatePlatforms() {
     let lastY = platforms[platforms.length - 1].y;
     for (let i = 0; i < 500; i++) {
-        lastY -= (90 + Math.random() * 40);
+        let heightM = (500 - lastY) / 10;
+        // Difficulty increase: gaps get larger, platforms get narrower
+        let gapModifier = Math.min(60, heightM / 15);
+        lastY -= (90 + gapModifier + Math.random() * 40);
+        
         let type = 'normal', roll = Math.random();
-        if (roll < 0.1) type = 'tramp'; 
-        else if (roll < 0.2) type = 'conveyor'; 
-        else if (roll < 0.3) type = 'crumble'; 
-        else if (roll < 0.4) type = 'ice';
+        // As height increases, normal platforms become rare
+        let normalChance = Math.max(0.1, 0.6 - (heightM / 1000));
+        
+        if (roll > normalChance) {
+            let subRoll = Math.random();
+            if (subRoll < 0.25) type = 'tramp'; 
+            else if (subRoll < 0.5) type = 'conveyor'; 
+            else if (subRoll < 0.75) type = 'crumble'; 
+            else type = 'ice';
+        }
 
-        // Rules: Conveyors NEVER move. Tramps can move.
-        let moveSpeed = (type !== 'conveyor' && Math.random() < 0.2) ? 2 : 0;
+        // Tramp and Crumble move. Conveyors stay still.
+        let moveSpeed = (type === 'tramp' || type === 'crumble' || (type === 'normal' && Math.random() < 0.3)) ? (1.5 + (heightM/500)) : 0;
         
         platforms.push({ 
-            x: Math.random() * 300, y: lastY, width: 80, height: 12, 
-            type: type, speed: moveSpeed, beltDir: 1.5,
-            crackTimer: 1.0, isCracking: false
+            x: Math.random() * 300, y: lastY, 
+            width: Math.max(40, 80 - (heightM / 25)), 
+            height: 12, type: type, speed: moveSpeed, 
+            beltDir: 1.5, crackTimer: 1.0, isCracking: false
         });
         if (Math.random() < 0.3) items.push({ x: platforms[platforms.length-1].x + 35, y: lastY - 25, collected: false });
     }
