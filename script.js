@@ -1,17 +1,18 @@
 const canvas = document.getElementById("gameCanvas");
 const ctx = canvas.getContext("2d");
 
-// Elements
+// UI Elements
 const mainMenu = document.getElementById("mainMenu");
 const shopMenu = document.getElementById("shopMenu");
 const settingsModal = document.getElementById("settingsModal");
 const skinMenu = document.getElementById("skinMenu");
 
-// Persistence & State
+// --- INITIAL STATE ---
 let tokens = parseInt(localStorage.getItem("parkourTokens")) || 0;
 let highScore = parseInt(localStorage.getItem("parkourHigh")) || 0;
 let ownedItems = JSON.parse(localStorage.getItem("ownedItems")) || ["White", "Blue"];
 let currentBGName = localStorage.getItem("currentBGName") || "White";
+let playerColor = localStorage.getItem("playerColor") || "#ff5722";
 
 let config = {
     Jump: localStorage.getItem("keyJump") || "Space",
@@ -20,12 +21,11 @@ let config = {
 };
 
 let gravity = 0.5, cameraY = 0, maxHeight = 0, gameActive = false;
-let playerColor = "#ff5722", hue = 0;
 const JUMP_FORCE = -13.5, BOUNCE_FORCE = -22;
 const player = { x: 180, y: 500, width: 30, height: 30, velX: 0, velY: 0, jumping: false, onIce: false, conveyorForce: 0 };
 let platforms = [], items = [], keys = {};
 
-// --- GUI LOGIC ---
+// --- NAVIGATION ---
 document.getElementById("startBtn").onclick = () => init();
 document.getElementById("shopBtn").onclick = () => { mainMenu.style.display = "none"; shopMenu.style.display = "flex"; updateUI(); };
 document.getElementById("closeShop").onclick = () => { shopMenu.style.display = "none"; mainMenu.style.display = "flex"; };
@@ -33,18 +33,18 @@ document.getElementById("skinMenuBtn").onclick = () => skinMenu.style.display = 
 document.getElementById("settingsBtn").onclick = () => { mainMenu.style.display = "none"; settingsModal.style.display = "flex"; };
 document.getElementById("backToMenu").onclick = () => { settingsModal.style.display = "none"; mainMenu.style.display = "flex"; };
 
+// --- SHOP & SKINS ---
 function buyItem(type, name, price) {
     if (ownedItems.includes(name)) {
         if (type === 'bg') currentBGName = name;
-        localStorage.setItem("currentBGName", name);
     } else if (tokens >= price) {
         tokens -= price;
         ownedItems.push(name);
         if (type === 'bg') currentBGName = name;
         localStorage.setItem("parkourTokens", tokens);
         localStorage.setItem("ownedItems", JSON.stringify(ownedItems));
-        localStorage.setItem("currentBGName", name);
     }
+    localStorage.setItem("currentBGName", currentBGName);
     updateUI();
 }
 
@@ -52,23 +52,29 @@ function updateUI() {
     document.getElementById("tokenBoard").innerText = `Tokens: ${tokens}`;
     document.getElementById("highScoreBoard").innerText = `Best: ${highScore}m`;
     
-    // Update Shop Buttons
-    const bgList = ["White", "Blue", "Sunset", "Space"];
-    bgList.forEach(bg => {
-        const priceTag = document.getElementById(`price-${bg}`);
-        if (ownedItems.includes(bg)) {
-            if (priceTag) priceTag.innerText = (currentBGName === bg ? "EQUIPPED" : "OWNED");
-        }
+    // Background Buttons
+    ["Sunset", "Space"].forEach(bg => {
+        const el = document.getElementById(`price-${bg}`);
+        if (el && ownedItems.includes(bg)) el.innerText = (currentBGName === bg ? "EQUIPPED" : "EQUIP");
     });
 
-    // Update Skin Locks
-    const unlocks = [0, 50, 100, 150, 200, 250, 300, 350, 400, 450, 500, 1000];
-    const ids = ["skin-orange", "skin-blue", "skin-green", "skin-purple", "skin-gold", "skin-mint", "skin-striped", "skin-camo", "skin-ghost", "skin-lava", "skin-rainbow", "skin-void"];
-    ids.forEach((id, i) => {
-        const btn = document.getElementById(id);
+    // Skins Unlock logic
+    const skinData = [
+        {id: "skin-orange", req: 0}, {id: "skin-blue", req: 50}, 
+        {id: "skin-green", req: 100}, {id: "skin-purple", req: 150},
+        {id: "skin-gold", req: 200}, {id: "skin-rainbow", req: 500}, 
+        {id: "skin-void", req: 1000}
+    ];
+    skinData.forEach(s => {
+        const btn = document.getElementById(s.id);
         if (btn) {
-            if (highScore >= unlocks[i]) btn.classList.remove("locked");
-            else btn.classList.add("locked");
+            if (highScore >= s.req) {
+                btn.classList.remove("locked");
+                btn.style.opacity = "1";
+            } else {
+                btn.classList.add("locked");
+                btn.style.opacity = "0.3";
+            }
         }
     });
 }
@@ -76,11 +82,51 @@ function updateUI() {
 function changeSkin(color, req) {
     if (highScore >= req) {
         playerColor = color;
+        localStorage.setItem("playerColor", color);
         skinMenu.style.display = "none";
     }
 }
 
-// --- GAME CORE ---
+// --- SETTINGS / REBINDING ---
+let bindingAction = null;
+const bindButtons = { Jump: "bindJump", Left: "bindLeft", Right: "bindRight" };
+
+Object.keys(bindButtons).forEach(action => {
+    const btn = document.getElementById(bindButtons[action]);
+    btn.innerText = config[action];
+    btn.onclick = () => {
+        bindingAction = action;
+        btn.innerText = "...";
+        btn.classList.add("waiting");
+    };
+});
+
+// --- INPUT HANDLING ---
+window.addEventListener("keydown", e => {
+    // Rebinding Logic
+    if (bindingAction) {
+        e.preventDefault();
+        config[bindingAction] = e.code;
+        localStorage.setItem("key" + bindingAction, e.code);
+        const btn = document.getElementById(bindButtons[bindingAction]);
+        btn.innerText = e.code;
+        btn.classList.remove("waiting");
+        bindingAction = null;
+        return;
+    }
+
+    // Jump Logic
+    if ((e.code === config.Jump || e.code === "Space" || e.code === "ArrowUp") && !player.jumping && gameActive) {
+        player.velY = JUMP_FORCE;
+        player.jumping = true;
+    }
+    
+    if (["Space", "ArrowUp", "ArrowLeft", "ArrowRight"].includes(e.code)) e.preventDefault();
+    keys[e.code] = true;
+});
+window.addEventListener("keyup", e => keys[e.code] = false);
+
+// --- GAME LOOP ---
 function init() {
     player.x = 180; player.y = 500; player.velX = 0; player.velY = 0;
     cameraY = 0; maxHeight = 0;
@@ -88,24 +134,20 @@ function init() {
     items = [];
     generatePlatforms();
     gameActive = true;
-    mainMenu.style.display = "none"; shopMenu.style.display = "none"; skinMenu.style.display = "none";
+    mainMenu.style.display = "none"; shopMenu.style.display = "none"; settingsModal.style.display = "none";
     updateUI();
     update();
 }
 
 function generatePlatforms() {
     let lastY = platforms[platforms.length - 1].y;
-    while (platforms.length < 500) {
+    for (let i = 0; i < 500; i++) {
         lastY -= (90 + Math.random() * 40);
         let type = 'normal', roll = Math.random();
         if (roll < 0.1) type = 'tramp';
-        else if (roll < 0.2) type = 'crumble';
-        else if (roll < 0.3) type = 'conveyor';
+        else if (roll < 0.2) type = 'conveyor';
 
-        let plat = {
-            x: Math.random() * 320, y: lastY, width: 60, height: 12, 
-            type: type, speed: (Math.random() < 0.2 ? 2 : 0), beltDir: 1.5
-        };
+        let plat = { x: Math.random() * 320, y: lastY, width: 60, height: 12, type: type, speed: (Math.random() < 0.2 ? 2 : 0), beltDir: 1.5 };
         platforms.push(plat);
         if (Math.random() < 0.3) items.push({ x: plat.x + 25, y: plat.y - 25, collected: false });
     }
@@ -113,21 +155,32 @@ function generatePlatforms() {
 
 function update() {
     if (!gameActive) return;
-    let friction = player.onIce ? 0.98 : 0.8;
-    if (keys[config.Right]) player.velX += 1;
-    if (keys[config.Left]) player.velX -= 1;
-    player.velX *= friction; player.velX += player.conveyorForce;
-    player.velY += gravity; player.x += player.velX; player.y += player.velY;
+    
+    // Movement
+    if (keys[config.Left] || keys["ArrowLeft"]) player.velX -= 1;
+    if (keys[config.Right] || keys["ArrowRight"]) player.velX += 1;
+    
+    player.velX *= 0.8; 
+    player.velX += player.conveyorForce;
+    player.velY += gravity;
+    player.x += player.velX; 
+    player.y += player.velY;
     
     if (player.x < -30) player.x = canvas.width;
     if (player.x > canvas.width) player.x = -30;
     player.conveyorForce = 0;
 
+    // Collisions
     platforms.forEach(plat => {
         if (player.velY > 0 && player.y + 30 > plat.y && player.y + 30 < plat.y + 15 + player.velY &&
             player.x + 30 > plat.x && player.x < plat.x + plat.width) {
-            if (plat.type === 'tramp') player.velY = BOUNCE_FORCE;
-            else { player.velY = 0; player.y = plat.y - 30; if (plat.type === 'conveyor') player.conveyorForce = plat.beltDir; }
+            if (plat.type === 'tramp') {
+                player.velY = BOUNCE_FORCE;
+                player.jumping = true;
+            } else {
+                player.velY = 0; player.y = plat.y - 30; player.jumping = false;
+                if (plat.type === 'conveyor') player.conveyorForce = plat.beltDir;
+            }
         }
         if (plat.speed) { plat.x += plat.speed; if (plat.x < 0 || plat.x > 340) plat.speed *= -1; }
     });
@@ -138,25 +191,23 @@ function update() {
         }
     });
 
+    // Camera
     if (player.y < cameraY + 300) cameraY = player.y - 300;
     let h = Math.max(0, Math.floor((500 - player.y) / 10));
     if (h > maxHeight) { maxHeight = h; document.getElementById("scoreBoard").innerText = `Height: ${maxHeight}m`; }
     if (player.y > cameraY + 700) gameOver();
-    hue++; draw(); requestAnimationFrame(update);
+    
+    draw();
+    requestAnimationFrame(update);
 }
 
 function draw() {
-    // REALISTIC GRADIENT BACKGROUNDS
     let grad = ctx.createLinearGradient(0, 0, 0, canvas.height);
-    if (currentBGName === "White") {
-        grad.addColorStop(0, "#ffffff"); grad.addColorStop(1, "#eeeeee");
-    } else if (currentBGName === "Blue") {
-        grad.addColorStop(0, "#4facfe"); grad.addColorStop(1, "#00f2fe");
-    } else if (currentBGName === "Sunset") {
-        grad.addColorStop(0, "#ff8c00"); grad.addColorStop(1, "#ff0080");
-    } else if (currentBGName === "Space") {
-        grad.addColorStop(0, "#0f0c29"); grad.addColorStop(0.5, "#302b63"); grad.addColorStop(1, "#24243e");
-    }
+    if (currentBGName === "White") { grad.addColorStop(0, "#fff"); grad.addColorStop(1, "#eee"); }
+    else if (currentBGName === "Blue") { grad.addColorStop(0, "#4facfe"); grad.addColorStop(1, "#00f2fe"); }
+    else if (currentBGName === "Sunset") { grad.addColorStop(0, "#ff8c00"); grad.addColorStop(1, "#ff0080"); }
+    else if (currentBGName === "Space") { grad.addColorStop(0, "#0f0c29"); grad.addColorStop(1, "#24243e"); }
+    
     ctx.fillStyle = grad;
     ctx.fillRect(0, 0, canvas.width, canvas.height);
 
@@ -167,26 +218,31 @@ function draw() {
     });
     items.forEach(item => { if (!item.collected) { ctx.fillStyle = "#ffeb3b"; ctx.beginPath(); ctx.arc(item.x+5, item.y+5, 8, 0, Math.PI*2); ctx.fill(); } });
     
-    // Skin Rendering
-    if (playerColor === 'rainbow') ctx.fillStyle = `hsl(${hue}, 100%, 50%)`;
-    else if (playerColor === 'void') { ctx.fillStyle = "black"; ctx.shadowBlur = 10; ctx.shadowColor = "white"; }
-    else ctx.fillStyle = playerColor;
+    ctx.fillStyle = playerColor;
     ctx.fillRect(player.x, player.y, 30, 30);
-    ctx.shadowBlur = 0; ctx.restore();
+    ctx.restore();
 }
 
 function gameOver() {
     gameActive = false;
-    if (maxHeight > highScore) { highScore = maxHeight; localStorage.setItem("parkourHigh", highScore); }
+    if (maxHeight > highScore) { 
+        highScore = maxHeight; 
+        localStorage.setItem("parkourHigh", highScore); 
+    }
     mainMenu.style.display = "flex";
-    document.getElementById("statusText").innerText = "GAME OVER";
+    updateUI();
 }
 
-// Rebinding & Keys
-window.addEventListener("keydown", e => {
-    if (["Space", "ArrowLeft", "ArrowRight"].includes(e.code)) e.preventDefault();
-    keys[e.code] = true;
-});
-window.addEventListener("keyup", e => keys[e.code] = false);
+// Mobile
+const setupBtn = (id, act) => {
+    const btn = document.getElementById(id);
+    btn.ontouchstart = (e) => {
+        e.preventDefault();
+        if (act === "Jump") { if (!player.jumping) { player.velY = JUMP_FORCE; player.jumping = true; } }
+        else keys[config[act]] = true;
+    };
+    btn.ontouchend = () => keys[config[act]] = false;
+};
+setupBtn("leftBtn", "Left"); setupBtn("rightBtn", "Right"); setupBtn("jumpBtn", "Jump");
 
 updateUI();
