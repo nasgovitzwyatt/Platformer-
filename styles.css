@@ -15,7 +15,7 @@ canvas {
     border: 4px solid #01579b;
     max-width: 95vw;
     height: auto;
-    z-index: 1; /* below menu */
+    z-index: 1;
 }
 
 .controls { display: flex; gap: 15px; margin-top: 10px; }
@@ -37,7 +37,6 @@ canvas {
     box-shadow: 0 10px 30px rgba(0,0,0,0.2);
     text-align: center;
     z-index: 1000;
-    pointer-events: auto;
 }
 
 .menu.hidden { display: none; }
@@ -60,7 +59,7 @@ canvas {
 }
 
 .menu-btn.primary { background: #ff5722; }
-.menu-btn.disabled { background: #bbb; }
+.menu-btn.disabled { background: #bbb; cursor: not-allowed; }
 
 .skins-panel {
     margin-top: 15px;
@@ -73,12 +72,43 @@ canvas {
 .skin-grid { display: flex; flex-direction: column; gap: 4px; }
 .skin-btn {
     height: 35px;
-    border: none;
+    border: 2px solid transparent;
     border-radius: 5px;
     font-size: 10px;
     color: white;
-    background: #777;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
 }
 
-.skin-btn.locked { background: #bbb; opacity: 0.6; }
-.skin-btn.selected { outline: 2px solid black; }
+.skin-btn.locked {
+    background: #bbb;
+    color: #666;
+    cursor: not-allowed;
+}
+
+.skin-btn.selected {
+    border: 2px solid black;
+}
+
+/* Skin colors */
+#skin-orange { background: #ff5722; }
+#skin-blue { background: #2196f3; }
+#skin-green { background: #4caf50; }
+#skin-purple { background: #9c27b0; }
+#skin-gold { background: #ffcc00; color: black; }
+#skin-mint { background: #1de9b6; color: black; }
+#skin-striped {
+    background: repeating-linear-gradient(45deg, #333, #333 5px, #fff 5px, #fff 10px);
+    color: red;
+}
+#skin-camo { background: #4b5320; }
+#skin-ghost { background: rgba(255,255,255,0.5); border: 1px solid #333; color: black; }
+#skin-lava { background: #d84315; border: 1px solid #ffab00; }
+#skin-rainbow { background: linear-gradient(to right, red, orange, yellow, green, blue, purple); }
+#skin-neon { background: #000; color: #39ff14; border: 1px solid #39ff14; }
+#skin-diamond { background: #b2ebf2; color: #00acc1; }
+#skin-ruby { background: #c62828; }
+#skin-emerald { background: #2e7d32; }
+#skin-void { background: #000; border: 1px dotted #fff; }
