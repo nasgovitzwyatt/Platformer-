@@ -17,7 +17,7 @@ const JUMP_FORCE = -13.5, BOUNCE_FORCE = -22;
 const player = { x: 180, y: 500, width: 30, height: 30, velX: 0, velY: 0, jumping: false, onIce: false, conveyorForce: 0 };
 let platforms = [], items = [], keys = {};
 
-// UI Navigation
+// Navigation
 document.getElementById("startBtn").onclick = () => init();
 document.getElementById("shopBtn").onclick = () => { mainMenu.style.display = "none"; shopMenu.style.display = "flex"; updateUI(); };
 document.getElementById("closeShop").onclick = () => { shopMenu.style.display = "none"; mainMenu.style.display = "flex"; };
@@ -44,10 +44,12 @@ function updateUI() {
         }
     });
 
+    // All Skins Logic
     const skinData = [
         {id: "skin-orange", req: 0}, {id: "skin-blue", req: 50}, {id: "skin-green", req: 100}, {id: "skin-purple", req: 150},
-        {id: "skin-gold", req: 200}, {id: "skin-mint", req: 250}, {id: "skin-striped", req: 300}, {id: "skin-camo", req: 350},
-        {id: "skin-ghost", req: 400}, {id: "skin-lava", req: 450}, {id: "skin-rainbow", req: 500}, {id: "skin-void", req: 1000}
+        {id: "skin-gold", req: 200}, {id: "skin-lava", req: 300}, {id: "skin-ghost", req: 400}, {id: "skin-rainbow", req: 500},
+        {id: "skin-diamond", req: 600}, {id: "skin-ruby", req: 700}, {id: "skin-emerald", req: 800}, {id: "skin-electric", req: 900},
+        {id: "skin-void", req: 1000}
     ];
     skinData.forEach(s => {
         const btn = document.getElementById(s.id);
@@ -55,7 +57,7 @@ function updateUI() {
             if (highScore >= s.req) {
                 btn.classList.remove("locked"); btn.innerText = (selectedSkinId === s.id) ? "ACTIVE" : "SELECT";
                 btn.classList.toggle("selected", selectedSkinId === s.id);
-            } else { btn.classList.add("locked"); btn.innerText = s.req + "m"; }
+            } else { btn.classList.add("locked"); btn.innerText = "🔒 " + s.req + "m"; }
         }
     });
 }
@@ -74,7 +76,7 @@ Object.keys(bindButtons).forEach(action => {
 window.addEventListener("keydown", e => {
     if (bindingAction) {
         e.preventDefault(); config[bindingAction] = e.code; localStorage.setItem("key" + bindingAction, e.code);
-        document.getElementById(bindButtons[bindingAction]).innerText = e.code;
+        document.getElementById(bindButtons[bindingAction]).innerText = e.code.replace("Key", "");
         document.getElementById(bindButtons[bindingAction]).classList.remove("waiting");
         bindingAction = null; return;
     }
@@ -97,9 +99,8 @@ function generatePlatforms() {
         lastY -= (90 + Math.random() * 40);
         let type = 'normal', roll = Math.random();
         if (roll < 0.1) type = 'tramp'; else if (roll < 0.2) type = 'conveyor'; else if (roll < 0.3) type = 'crumble';
-        let plat = { x: Math.random() * 300, y: lastY, width: 80, height: 12, type: type, speed: (Math.random() < 0.2 ? 2 : 0), beltDir: 1.5 };
-        platforms.push(plat);
-        if (Math.random() < 0.3) items.push({ x: plat.x + 35, y: plat.y - 25, collected: false });
+        platforms.push({ x: Math.random() * 300, y: lastY, width: 80, height: 12, type: type, speed: (Math.random() < 0.2 ? 2 : 0), beltDir: 1.5 });
+        if (Math.random() < 0.3) items.push({ x: platforms[platforms.length-1].x + 35, y: lastY - 25, collected: false });
     }
 }
 
@@ -126,7 +127,7 @@ function update() {
 
 function draw() {
     let grad = ctx.createLinearGradient(0, 0, 0, canvas.height);
-    if (currentBGName === "White") { grad.addColorStop(0, "#fff"); grad.addColorStop(1, "#eee"); }
+    if (currentBGName === "White") { grad.addColorStop(0, "#fff"); grad.addColorStop(1, "#ddd"); }
     else if (currentBGName === "Blue") { grad.addColorStop(0, "#4facfe"); grad.addColorStop(1, "#00f2fe"); }
     else if (currentBGName === "Sunset") { grad.addColorStop(0, "#ff8c00"); grad.addColorStop(1, "#ff0080"); }
     else if (currentBGName === "Space") { grad.addColorStop(0, "#0f0c29"); grad.addColorStop(1, "#24243e"); }
@@ -137,11 +138,16 @@ function draw() {
         ctx.fillRect(p.x, p.y, p.width, p.height);
     });
     items.forEach(item => { if (!item.collected) { ctx.fillStyle = "#ffeb3b"; ctx.beginPath(); ctx.arc(item.x+5, item.y+5, 8, 0, Math.PI*2); ctx.fill(); } });
-    if (playerColor === 'rainbow') { ctx.fillStyle = `hsl(${(Date.now() / 10) % 360}, 100%, 50%)`; }
-    else if (playerColor === 'void') { ctx.fillStyle = "black"; ctx.shadowBlur = 15; ctx.shadowColor = "white"; }
-    else if (playerColor === 'ghost') { ctx.globalAlpha = 0.5; ctx.fillStyle = "white"; }
+    
+    // Skin Graphics
+    if (playerColor === 'rainbow') ctx.fillStyle = `hsl(${(Date.now() / 10) % 360}, 100%, 50%)`;
+    else if (playerColor === 'electric') { ctx.fillStyle = "#fff"; ctx.shadowBlur = 15; ctx.shadowColor = "#00d2ff"; }
+    else if (playerColor === 'diamond') { ctx.fillStyle = "#b2ebf2"; ctx.strokeStyle = "#fff"; ctx.strokeRect(player.x, player.y, 30, 30); }
+    else if (playerColor === 'ghost') { ctx.globalAlpha = 0.4; ctx.fillStyle = "white"; }
     else { ctx.fillStyle = playerColor; }
-    ctx.fillRect(player.x, player.y, 30, 30); ctx.globalAlpha = 1.0; ctx.shadowBlur = 0; ctx.restore();
+    
+    ctx.fillRect(player.x, player.y, 30, 30);
+    ctx.shadowBlur = 0; ctx.globalAlpha = 1.0; ctx.restore();
 }
 
 function gameOver() { gameActive = false; mainMenu.style.display = "flex"; updateUI(); }
