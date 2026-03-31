@@ -6,59 +6,45 @@ body {
 
 #ui { display: flex; gap: 10px; margin-bottom: 5px; z-index: 5; }
 #scoreBoard, #highScoreBoard { font-size: 14px; font-weight: bold; background: white; padding: 5px 10px; border-radius: 20px; }
+canvas { background: white; border: 4px solid #01579b; max-width: 95vw; height: auto; touch-action: none; }
 
-canvas { background: white; border: 4px solid #01579b; max-width: 95vw; height: auto; z-index: 1; pointer-events:auto; }
-
-.controls { display: flex; gap: 15px; margin-top: 10px; z-index: 10; }
-.control-btn { width: 70px; height: 70px; background: #333; color: white; border: none; border-radius: 50%; font-weight: bold; }
-#jumpBtn { width: 90px; border-radius: 20px; }
-
-/* MENU */
+/* Menu */
 .menu {
-    position: absolute; top: 50%; left: 50%;
-    transform: translate(-50%, -50%);
-    width: 260px; padding: 20px; border-radius: 20px;
-    background: rgba(255,255,255,0.95);
-    box-shadow: 0 10px 30px rgba(0,0,0,0.2); text-align: center; z-index: 1000;
-    pointer-events:auto;
+    position: absolute; top: 40%; left: 50%; transform: translate(-50%, -50%);
+    background: rgba(255,255,255,0.95); padding: 20px; border-radius: 15px; text-align: center; z-index: 20; width: 220px;
 }
-.menu.hidden { display: none; }
-
-.menu-title { font-size: 22px; color: #01579b; margin-bottom: 15px; }
+.menu-title { margin: 0 0 10px 0; font-size: 22px; }
 .menu-buttons { display: flex; flex-direction: column; gap: 10px; }
-
-.menu-btn {
-    padding: 12px; border: none; border-radius: 12px; font-weight: bold; background: #455a64; color: white; cursor: pointer;
-}
-.menu-btn.primary { background: #ff5722; }
-.menu-btn.disabled { background: #bbb; cursor: not-allowed; }
+.menu-btn { padding: 10px; font-size: 16px; border: none; border-radius: 8px; cursor: pointer; }
+.menu-btn.primary { background: #ff5722; color: white; }
+.menu-btn.disabled { background: #ccc; cursor: not-allowed; }
 
 .skins-panel { margin-top: 15px; max-height: 200px; overflow-y: auto; }
-.hidden { display: none; }
+.skins-panel.hidden { display: none; }
+.skin-grid { display: flex; flex-direction: column; gap: 5px; }
+.skin-btn { padding: 5px; font-size: 12px; border-radius: 5px; border: none; cursor: pointer; color: white; }
+.skin-btn.locked { background: #bbb; color: #444; cursor: default; }
+.skin-btn.selected { border: 2px solid yellow; }
 
-.skin-grid { display: flex; flex-direction: column; gap: 4px; }
-.skin-btn {
-    height: 35px; border: 2px solid transparent; border-radius: 5px;
-    font-size: 10px; color: white; cursor: pointer; display: flex;
-    align-items: center; justify-content: center;
-}
-.skin-btn.locked { background: #bbb; color: #666; cursor: not-allowed; }
-.skin-btn.selected { border: 2px solid black; }
+/* Controls */
+.controls { display: flex; gap: 15px; margin-top: 10px; z-index: 10; }
+.control-btn { width: 70px; height: 70px; background: #333; color: white; border: none; border-radius: 50%; font-size: 14px; font-weight: bold; touch-action: manipulation; }
+#jumpBtn { width: 90px; border-radius: 20px; background: #444; }
 
-/* Skin colors */
+/* Skin colors (preview in menu) */
 #skin-orange { background: #ff5722; }
 #skin-blue { background: #2196f3; }
 #skin-green { background: #4caf50; }
 #skin-purple { background: #9c27b0; }
 #skin-gold { background: #ffcc00; color: black; }
 #skin-mint { background: #1de9b6; color: black; }
-#skin-striped { background: repeating-linear-gradient(45deg,#333,#333 5px,#fff 5px,#fff 10px); color:red; }
+#skin-striped { background: repeating-linear-gradient(45deg, #333, #333 5px, #fff 5px, #fff 10px); color: red; }
 #skin-camo { background: #4b5320; }
-#skin-ghost { background: rgba(255,255,255,0.5); border:1px solid #333; color:black; }
-#skin-lava { background:#d84315; border:1px solid #ffab00; }
+#skin-ghost { background: rgba(255,255,255,0.5); border: 1px solid #333; color: black; }
+#skin-lava { background: #d84315; border: 1px solid #ffab00; }
 #skin-rainbow { background: linear-gradient(to right, red, orange, yellow, green, blue, purple); }
-#skin-neon { background:#000; color:#39ff14; border:1px solid #39ff14; }
-#skin-diamond { background:#b2ebf2; color:#00acc1; }
-#skin-ruby { background:#c62828; }
-#skin-emerald { background:#2e7d32; }
-#skin-void { background:#000; border:1px dotted #fff; }
+#skin-neon { background: #000; color: #39ff14; border: 1px solid #39ff14; }
+#skin-diamond { background: #b2ebf2; color: #00acc1; }
+#skin-ruby { background: #c62828; }
+#skin-emerald { background: #2e7d32; }
+#skin-void { background: #000; border: 1px dotted #fff; }
