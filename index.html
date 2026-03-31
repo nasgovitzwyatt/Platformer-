@@ -22,31 +22,48 @@
     </div>
 
     <div id="mainMenu" class="menu-screen">
-        <h1 id="statusText">CUBE PARKOUR</h1>
+        <h1 class="game-title">CUBE PARKOUR</h1>
         <div class="menu-buttons">
             <button id="startBtn" class="menu-btn primary">START GAME</button>
-            <button id="shopBtn" class="menu-btn" style="background: #ffc107; color: black;">SHOP</button>
+            <button id="shopBtn" class="menu-btn shop-gold">SHOP</button>
             <button id="skinMenuBtn" class="menu-btn">SKINS</button>
             <button id="settingsBtn" class="menu-btn">SETTINGS</button>
         </div>
     </div>
 
     <div id="shopMenu" class="menu-screen" style="display: none;">
-        <h2>CITY SHOP</h2>
-        <div class="shop-container">
-            <div class="shop-section">
+        <h2 class="shop-title">THE CUBE STORE</h2>
+        <div class="shop-grid-container">
+            <div class="shop-card">
                 <h3>Backgrounds</h3>
-                <button class="shop-item" onclick="buyItem('bg', 'White', 0)">Classic White (Free)</button>
-                <button class="shop-item" onclick="buyItem('bg', 'Sunset', 30)">Sunset (30 T)</button>
-                <button class="shop-item" onclick="buyItem('bg', 'Space', 50)">Space (50 T)</button>
+                <div class="shop-item-list">
+                    <button class="shop-item" onclick="buyItem('bg', 'White', 0)">
+                        <span>Classic White</span><span class="price">FREE</span>
+                    </button>
+                    <button class="shop-item" onclick="buyItem('bg', 'Blue', 0)">
+                        <span>Sky Blue</span><span class="price">FREE</span>
+                    </button>
+                    <button class="shop-item" onclick="buyItem('bg', 'Sunset', 30)">
+                        <span>Sunset</span><span class="price">30 T</span>
+                    </button>
+                    <button class="shop-item" onclick="buyItem('bg', 'Space', 50)">
+                        <span>Space</span><span class="price">50 T</span>
+                    </button>
+                </div>
             </div>
-            <div class="shop-section">
+            <div class="shop-card">
                 <h3>Powerups</h3>
-                <button class="shop-item" onclick="buyItem('pow', 'DoubleJump', 100)">Extra Jump (100 T)</button>
-                <button class="shop-item" onclick="buyItem('pow', 'Shield', 75)">Shield (75 T)</button>
+                <div class="shop-item-list">
+                    <button class="shop-item" onclick="buyItem('pow', 'DoubleJump', 100)">
+                        <span>Extra Jump</span><span class="price">100 T</span>
+                    </button>
+                    <button class="shop-item" onclick="buyItem('pow', 'Shield', 75)">
+                        <span>Shield</span><span class="price">75 T</span>
+                    </button>
+                </div>
             </div>
         </div>
-        <button id="closeShop" class="menu-btn" style="margin-top:20px;">BACK</button>
+        <button id="closeShop" class="menu-btn secondary">BACK TO MENU</button>
     </div>
 
     <div id="settingsModal" class="menu-screen" style="display: none;">
@@ -54,7 +71,7 @@
         <div class="setting-item"><span>Jump:</span><button id="bindJump" class="bind-btn">Space</button></div>
         <div class="setting-item"><span>Left:</span><button id="bindLeft" class="bind-btn">Left</button></div>
         <div class="setting-item"><span>Right:</span><button id="bindRight" class="bind-btn">Right</button></div>
-        <button id="backToMenu" class="menu-btn" style="margin-top:20px;">BACK</button>
+        <button id="backToMenu" class="menu-btn secondary">BACK</button>
     </div>
 
     <div id="skinMenu" style="display: none;">
