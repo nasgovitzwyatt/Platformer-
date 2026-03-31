@@ -38,7 +38,7 @@
                 <h3>Backgrounds</h3>
                 <div class="shop-item-list">
                     <button class="shop-item" id="btn-bg-White" onclick="buyItem('bg', 'White', 0)">
-                        <span>White</span><span class="price" id="price-White">EQUIPPED</span>
+                        <span>White</span><span class="price" id="price-White">OWNED</span>
                     </button>
                     <button class="shop-item" id="btn-bg-Blue" onclick="buyItem('bg', 'Blue', 0)">
                         <span>Blue</span><span class="price" id="price-Blue">OWNED</span>
@@ -52,10 +52,10 @@
                 </div>
             </div>
             <div class="shop-card">
-                <h3>Powerups</h3>
+                <h3>Upgrades</h3>
                 <div class="shop-item-list">
                     <button class="shop-item" id="btn-pow-DoubleJump" onclick="buyItem('pow', 'DoubleJump', 100)">
-                        <span>Extra Jump</span><span class="price" id="price-DoubleJump">100 T</span>
+                        <span>Double Jump</span><span class="price" id="price-DoubleJump">100 T</span>
                     </button>
                 </div>
             </div>
@@ -71,8 +71,11 @@
             <button class="skin-btn" id="skin-green" onclick="changeSkin('#4caf50', 100, 'skin-green')">100m</button>
             <button class="skin-btn" id="skin-purple" onclick="changeSkin('#9c27b0', 150, 'skin-purple')">150m</button>
             <button class="skin-btn" id="skin-gold" onclick="changeSkin('#ffcc00', 200, 'skin-gold')">200m</button>
+            <button class="skin-btn" id="skin-mint" onclick="changeSkin('#1de9b6', 250, 'skin-mint')">250m</button>
             <button class="skin-btn" id="skin-lava" onclick="changeSkin('lava', 300, 'skin-lava')">300m</button>
+            <button class="skin-btn" id="skin-camo" onclick="changeSkin('camo', 350, 'skin-camo')">350m</button>
             <button class="skin-btn" id="skin-ghost" onclick="changeSkin('ghost', 400, 'skin-ghost')">400m</button>
+            <button class="skin-btn" id="skin-neon" onclick="changeSkin('neon', 450, 'skin-neon')">450m</button>
             <button class="skin-btn" id="skin-rainbow" onclick="changeSkin('rainbow', 500, 'skin-rainbow')">500m</button>
             <button class="skin-btn" id="skin-diamond" onclick="changeSkin('diamond', 600, 'skin-diamond')">600m</button>
             <button class="skin-btn" id="skin-ruby" onclick="changeSkin('ruby', 700, 'skin-ruby')">700m</button>
@@ -85,18 +88,9 @@
     <div id="settingsModal" class="menu-screen" style="display: none;">
         <h2 class="shop-title">SETTINGS</h2>
         <div class="settings-container">
-            <div class="setting-item">
-                <span>JUMP</span>
-                <button id="bindJump" class="bind-btn">SPACE</button>
-            </div>
-            <div class="setting-item">
-                <span>MOVE LEFT</span>
-                <button id="bindLeft" class="bind-btn">LEFT</button>
-            </div>
-            <div class="setting-item">
-                <span>MOVE RIGHT</span>
-                <button id="bindRight" class="bind-btn">RIGHT</button>
-            </div>
+            <div class="setting-item"><span>JUMP</span><button id="bindJump" class="bind-btn">SPACE</button></div>
+            <div class="setting-item"><span>LEFT</span><button id="bindLeft" class="bind-btn">LEFT</button></div>
+            <div class="setting-item"><span>RIGHT</span><button id="bindRight" class="bind-btn">RIGHT</button></div>
         </div>
         <button id="backToMenu" class="menu-btn secondary">SAVE & BACK</button>
     </div>
