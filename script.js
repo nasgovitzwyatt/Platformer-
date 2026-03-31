@@ -44,12 +44,11 @@ function updateUI() {
         }
     });
 
-    // All Skins Logic
     const skinData = [
         {id: "skin-orange", req: 0}, {id: "skin-blue", req: 50}, {id: "skin-green", req: 100}, {id: "skin-purple", req: 150},
-        {id: "skin-gold", req: 200}, {id: "skin-lava", req: 300}, {id: "skin-ghost", req: 400}, {id: "skin-rainbow", req: 500},
-        {id: "skin-diamond", req: 600}, {id: "skin-ruby", req: 700}, {id: "skin-emerald", req: 800}, {id: "skin-electric", req: 900},
-        {id: "skin-void", req: 1000}
+        {id: "skin-gold", req: 200}, {id: "skin-mint", req: 250}, {id: "skin-lava", req: 300}, {id: "skin-camo", req: 350},
+        {id: "skin-ghost", req: 400}, {id: "skin-neon", req: 450}, {id: "skin-rainbow", req: 500}, {id: "skin-diamond", req: 600},
+        {id: "skin-ruby", req: 700}, {id: "skin-emerald", req: 800}, {id: "skin-electric", req: 900}, {id: "skin-void", req: 1000}
     ];
     skinData.forEach(s => {
         const btn = document.getElementById(s.id);
@@ -139,11 +138,12 @@ function draw() {
     });
     items.forEach(item => { if (!item.collected) { ctx.fillStyle = "#ffeb3b"; ctx.beginPath(); ctx.arc(item.x+5, item.y+5, 8, 0, Math.PI*2); ctx.fill(); } });
     
-    // Skin Graphics
+    // Skin Rendering
     if (playerColor === 'rainbow') ctx.fillStyle = `hsl(${(Date.now() / 10) % 360}, 100%, 50%)`;
-    else if (playerColor === 'electric') { ctx.fillStyle = "#fff"; ctx.shadowBlur = 15; ctx.shadowColor = "#00d2ff"; }
-    else if (playerColor === 'diamond') { ctx.fillStyle = "#b2ebf2"; ctx.strokeStyle = "#fff"; ctx.strokeRect(player.x, player.y, 30, 30); }
+    else if (playerColor === 'lava') { ctx.fillStyle = "#ff5722"; ctx.shadowBlur = 10; ctx.shadowColor = "#ffeb3b"; }
+    else if (playerColor === 'electric') { ctx.fillStyle = "#00d2ff"; ctx.shadowBlur = 15; ctx.shadowColor = "#fff"; }
     else if (playerColor === 'ghost') { ctx.globalAlpha = 0.4; ctx.fillStyle = "white"; }
+    else if (playerColor === 'neon') { ctx.fillStyle = "#39ff14"; ctx.shadowBlur = 15; ctx.shadowColor = "#39ff14"; }
     else { ctx.fillStyle = playerColor; }
     
     ctx.fillRect(player.x, player.y, 30, 30);
