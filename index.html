@@ -7,53 +7,44 @@
     <link rel="stylesheet" href="styles.css">
 </head>
 <body>
-    <div id="game-container">
-        <div id="ui-layer">
+    <div id="game-wrapper">
+        <div id="ingame-ui">
             <div id="stats">
                 <div id="scoreBoard">Height: 0m</div>
                 <div id="highScoreBoard">Best: 0m</div>
             </div>
-            <button id="pauseBtn">⏸</button>
+            <button id="pauseBtn" onclick="togglePause()">⏸</button>
         </div>
 
         <canvas id="gameCanvas" width="400" height="600"></canvas>
 
-        <div id="mainGui" class="overlay">
-            <h1 id="guiTitle">CUBE PARKOUR</h1>
-            <div class="menu-buttons">
+        <div id="menu-container">
+            <div id="mainGui" class="overlay">
+                <h1 id="guiTitle">CUBE PARKOUR</h1>
                 <button class="menu-btn" onclick="startGame()">START GAME</button>
-                <button class="menu-btn" onclick="openSkins()">SKINS</button>
-                <button class="menu-btn" onclick="openSettings()">SETTINGS</button>
+                <button class="menu-btn" onclick="showScreen('skinsGui')">SKINS</button>
+                <button class="menu-btn" onclick="showScreen('settingsGui')">SETTINGS</button>
+            </div>
+
+            <div id="skinsGui" class="overlay hidden">
+                <h2>SKINS</h2>
+                <div id="skinGrid"></div>
+                <button class="menu-btn back" onclick="showScreen('mainGui')">BACK</button>
+            </div>
+
+            <div id="settingsGui" class="overlay hidden">
+                <h2>SETTINGS</h2>
+                <div class="bind-row">Left: <button id="bind-left" onclick="rebind('left')">A</button></div>
+                <div class="bind-row">Right: <button id="bind-right" onclick="rebind('right')">D</button></div>
+                <div class="bind-row">Jump: <button id="bind-jump" onclick="rebind('jump')">Space</button></div>
+                <button class="menu-btn back" onclick="showScreen('mainGui')">SAVE</button>
             </div>
         </div>
 
-        <div id="skinsGui" class="overlay hidden">
-            <h2>SKINS</h2>
-            <div id="skinGrid" class="skin-grid"></div>
-            <button class="menu-btn back-btn" onclick="closeOverlay()">BACK</button>
-        </div>
-
-        <div id="settingsGui" class="overlay hidden">
-            <h2>SETTINGS</h2>
-            <div class="setting-item">
-                <span>Left:</span>
-                <button id="bind-left" class="bind-btn" onclick="rebind('left')">A</button>
-            </div>
-            <div class="setting-item">
-                <span>Right:</span>
-                <button id="bind-right" class="bind-btn" onclick="rebind('right')">D</button>
-            </div>
-            <div class="setting-item">
-                <span>Jump:</span>
-                <button id="bind-jump" class="bind-btn" onclick="rebind('jump')">Space</button>
-            </div>
-            <button class="menu-btn back-btn" onclick="closeOverlay()">SAVE & BACK</button>
-        </div>
-
-        <div class="mobile-controls">
-            <button class="ctrl-btn" id="leftBtn">◀</button>
-            <button class="ctrl-btn" id="jumpBtn">JUMP</button>
-            <button class="ctrl-btn" id="rightBtn">▶</button>
+        <div id="mobile-buttons">
+            <button class="m-btn" id="leftBtn">◀</button>
+            <button class="m-btn" id="jumpBtn">JUMP</button>
+            <button class="m-btn" id="rightBtn">▶</button>
         </div>
     </div>
     <script src="script.js"></script>
