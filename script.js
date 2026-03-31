@@ -26,24 +26,24 @@ const player = { x: 180, y: 500, width: 30, height: 30, velX: 0, velY: 0, jumpin
 let platforms = [];
 const keys = {};
 
-// Navigation
-startBtn.onclick = (e) => { e.stopPropagation(); init(); };
-skinMenuBtn.onclick = (e) => { 
-    e.stopPropagation();
+// --- GUI NAVIGATION ---
+startBtn.onclick = () => { init(); };
+
+skinMenuBtn.onclick = () => { 
     skinMenu.style.display = skinMenu.style.display === "none" ? "block" : "none";
 };
-settingsBtn.onclick = (e) => { 
-    e.stopPropagation();
+
+settingsBtn.onclick = () => { 
     mainMenu.style.display = "none";
     settingsModal.style.display = "flex";
 };
-backBtn.onclick = (e) => { 
-    e.stopPropagation();
+
+backBtn.onclick = () => { 
     settingsModal.style.display = "none";
     mainMenu.style.display = "flex";
 };
 
-// --- REBINDING LOGIC (FIXED) ---
+// --- REBINDING SYSTEM ---
 let bindingAction = null;
 const bindButtons = {
     Jump: document.getElementById("bindJump"),
@@ -51,31 +51,31 @@ const bindButtons = {
     Right: document.getElementById("bindRight")
 };
 
+// Initialize button text
 Object.keys(bindButtons).forEach(action => {
     bindButtons[action].innerText = config[action];
+    
     bindButtons[action].onclick = (e) => {
-        e.stopPropagation();
-        e.preventDefault();
-        
-        // Remove focus immediately so Space doesn't "re-click" the button
-        bindButtons[action].blur(); 
-        
-        if (bindingAction) return; // Prevent double-triggering
+        // Clear any other active binding states
+        Object.values(bindButtons).forEach(b => {
+            b.classList.remove("waiting");
+            b.innerText = config[Object.keys(bindButtons).find(key => bindButtons[key] === b)];
+        });
 
         bindingAction = action;
-        Object.values(bindButtons).forEach(b => b.classList.remove("waiting"));
         bindButtons[action].innerText = "...";
         bindButtons[action].classList.add("waiting");
+        bindButtons[action].blur(); // Prevent spacebar from re-triggering click
     };
 });
 
+// --- INPUT HANDLING ---
 window.addEventListener("keydown", e => {
-    // 1. REBINDING CHECK
+    // If we are currently rebinding a key
     if (bindingAction) {
         e.preventDefault();
-        e.stopImmediatePropagation(); // Stops the event from bubbling to other listeners
         
-        let newKey = e.code;
+        const newKey = e.code;
         config[bindingAction] = newKey;
         localStorage.setItem("key" + bindingAction, newKey);
         
@@ -83,22 +83,27 @@ window.addEventListener("keydown", e => {
         bindButtons[bindingAction].classList.remove("waiting");
         
         bindingAction = null;
-        return false;
+        return;
     }
     
-    // 2. GAMEPLAY CONTROLS
+    // Prevent scrolling for game keys
     if ([config.Jump, config.Left, config.Right, "ArrowUp", "Space"].includes(e.code)) {
         e.preventDefault();
     }
     
+    // Player Jump
     if ((e.code === config.Jump || e.code === "ArrowUp") && !player.jumping && gameActive) {
         player.velY = JUMP_FORCE; player.jumping = true;
     }
+    
     keys[e.code] = true;
-}, true); // Use capture phase (true) to catch the event before buttons do
+});
 
-window.addEventListener("keyup", e => keys[e.code] = false);
-// ------------------------------
+window.addEventListener("keyup", e => {
+    keys[e.code] = false;
+});
+
+// --- GAME LOGIC ---
 
 function updateUI() {
     document.getElementById("highScoreBoard").innerText = `Best: ${highScore}m`;
@@ -132,9 +137,11 @@ function init() {
     platforms = [{ x: 0, y: 580, width: 400, height: 20, speed: 0, type: 'normal', isCracking: false }];
     generatePlatforms();
     gameActive = true;
+    
     mainMenu.style.display = "none";
     settingsModal.style.display = "none";
     skinMenu.style.display = "none"; 
+    
     updateUI();
     update();
 }
@@ -146,15 +153,18 @@ function generatePlatforms() {
         lastY -= (90 + gap) + Math.random() * 40; 
         let h = (500 - lastY) / 10;
         let type = 'normal', roll = Math.random();
+        
         if (h > 40) {
             if (roll < 0.12) type = 'tramp'; 
             else if (roll < 0.28) type = 'crumble'; 
             else if (h > 140 && roll < 0.45) type = 'ice';
         }
+
         let moveSpeed = 0;
         if (h > 100 && Math.random() < 0.45) {
             moveSpeed = (Math.random() > 0.5 ? 2.2 : -2.2) + (h / 350);
         }
+
         platforms.push({
             x: Math.random() * 320, y: lastY,
             width: Math.max(40, 80 - (h / 35)), 
@@ -166,11 +176,14 @@ function generatePlatforms() {
 
 function update() {
     if (!gameActive) return;
+
     let h = Math.max(0, Math.floor((500 - player.y) / 10));
+    
     if (h >= 1000) {
         windForce = Math.sin(Date.now() / 1000) * 1.5;
         player.velX += windForce;
     }
+
     let friction = player.onIce ? 0.98 : 0.8;
     let accel = player.onIce ? 0.3 : 1;
 
@@ -181,8 +194,10 @@ function update() {
     player.velY += gravity;
     player.x += player.velX;
     player.y += player.velY;
+
     if (player.x < -30) player.x = canvas.width;
     if (player.x > canvas.width) player.x = -30;
+
     player.onIce = false; 
 
     platforms = platforms.filter(plat => {
@@ -192,6 +207,7 @@ function update() {
         }
         if (player.velY > 0 && player.y + 30 > plat.y && player.y + 30 < plat.y + 15 + player.velY &&
             player.x + 30 > plat.x && player.x < plat.x + plat.width) {
+            
             if (plat.type === 'tramp') {
                 player.velY = BOUNCE_FORCE;
                 player.jumping = true;
@@ -214,6 +230,7 @@ function update() {
         document.getElementById("scoreBoard").innerText = `Height: ${maxHeight}m`;
     }
     if (player.y > cameraY + canvas.height + 100) gameOver();
+
     hue++; 
     draw();
     requestAnimationFrame(update);
@@ -223,6 +240,7 @@ function draw() {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     ctx.save();
     ctx.translate(0, -cameraY);
+    
     platforms.forEach(p => {
         if (p.type === 'ice') ctx.fillStyle = "#80deea";
         else if (p.type === 'crumble') {
@@ -233,7 +251,8 @@ function draw() {
         else ctx.fillStyle = "#455a64";
         ctx.fillRect(p.x, p.y, p.width, p.height);
     });
-    
+
+    // Drawing player skins
     if (playerColor === 'rainbow') ctx.fillStyle = `hsl(${hue}, 100%, 50%)`;
     else if (playerColor === 'striped') {
         let grad = ctx.createLinearGradient(player.x, player.y, player.x+30, player.y+30);
@@ -255,4 +274,46 @@ function draw() {
         ctx.strokeStyle = "white"; ctx.strokeRect(player.x+5, player.y+5, 20, 20);
     } else if (playerColor === 'void') {
         ctx.fillStyle = "black"; ctx.fillRect(player.x, player.y, 30, 30);
-        ctx.fillStyle = "white
+        ctx.fillStyle = "white"; ctx.fillRect(player.x + Math.random()*25, player.y + Math.random()*25, 2, 2);
+    } else ctx.fillStyle = playerColor;
+    
+    ctx.fillRect(player.x, player.y, 30, 30);
+    ctx.shadowBlur = 0; ctx.globalAlpha = 1.0;
+    ctx.restore();
+}
+
+function gameOver() {
+    gameActive = false;
+    if (maxHeight > highScore) {
+        highScore = maxHeight;
+        localStorage.setItem("parkourHigh", highScore);
+    }
+    document.getElementById("statusText").innerText = "YOU FELL!";
+    startBtn.innerText = "RETRY";
+    mainMenu.style.display = "flex";
+    updateUI();
+}
+
+// --- MOBILE BUTTONS ---
+const setupBtn = (id, action) => {
+    const btn = document.getElementById(id);
+    btn.addEventListener("touchstart", (e) => {
+        e.preventDefault();
+        if (action === "Jump") { 
+            if (!player.jumping && gameActive) { 
+                player.velY = JUMP_FORCE; player.jumping = true; 
+            } 
+        }
+        else keys[config[action]] = true;
+    }, { passive: false });
+    btn.addEventListener("touchend", (e) => { 
+        e.preventDefault(); 
+        keys[config[action]] = false; 
+    }, { passive: false });
+};
+
+setupBtn("leftBtn", "Left");
+setupBtn("rightBtn", "Right");
+setupBtn("jumpBtn", "Jump");
+
+updateUI();
