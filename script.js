@@ -1,31 +1,23 @@
 const canvas = document.getElementById("gameCanvas");
 const ctx = canvas.getContext("2d");
 
-// UI Elements
-const mainMenu = document.getElementById("mainMenu");
-const shopMenu = document.getElementById("shopMenu");
-const settingsModal = document.getElementById("settingsModal");
-const skinMenu = document.getElementById("skinMenu");
+const mainMenu = document.getElementById("mainMenu"), shopMenu = document.getElementById("shopMenu"),
+      settingsModal = document.getElementById("settingsModal"), skinMenu = document.getElementById("skinMenu");
 
-// State Persistence
 let tokens = parseInt(localStorage.getItem("parkourTokens")) || 0;
 let highScore = parseInt(localStorage.getItem("parkourHigh")) || 0;
 let ownedItems = JSON.parse(localStorage.getItem("ownedItems")) || ["White", "Blue"];
 let currentBGName = localStorage.getItem("currentBGName") || "White";
 let playerColor = localStorage.getItem("playerColor") || "#ff5722";
+let selectedSkinId = localStorage.getItem("selectedSkinId") || "skin-orange";
 
-let config = {
-    Jump: localStorage.getItem("keyJump") || "Space",
-    Left: localStorage.getItem("keyLeft") || "ArrowLeft",
-    Right: localStorage.getItem("keyRight") || "ArrowRight"
-};
-
+let config = { Jump: localStorage.getItem("keyJump") || "Space", Left: localStorage.getItem("keyLeft") || "ArrowLeft", Right: localStorage.getItem("keyRight") || "ArrowRight" };
 let gravity = 0.5, cameraY = 0, maxHeight = 0, gameActive = false;
 const JUMP_FORCE = -13.5, BOUNCE_FORCE = -22;
 const player = { x: 180, y: 500, width: 30, height: 30, velX: 0, velY: 0, jumping: false, onIce: false, conveyorForce: 0 };
 let platforms = [], items = [], keys = {};
 
-// Navigation Logic
+// UI Navigation
 document.getElementById("startBtn").onclick = () => init();
 document.getElementById("shopBtn").onclick = () => { mainMenu.style.display = "none"; shopMenu.style.display = "flex"; updateUI(); };
 document.getElementById("closeShop").onclick = () => { shopMenu.style.display = "none"; mainMenu.style.display = "flex"; };
@@ -34,110 +26,69 @@ document.getElementById("settingsBtn").onclick = () => { mainMenu.style.display 
 document.getElementById("backToMenu").onclick = () => { settingsModal.style.display = "none"; mainMenu.style.display = "flex"; };
 
 function buyItem(type, name, price) {
-    if (ownedItems.includes(name)) {
-        if (type === 'bg') currentBGName = name;
-        localStorage.setItem("currentBGName", name);
-    } else if (tokens >= price) {
-        tokens -= price;
-        ownedItems.push(name);
-        if (type === 'bg') currentBGName = name;
-        localStorage.setItem("parkourTokens", tokens);
-        localStorage.setItem("ownedItems", JSON.stringify(ownedItems));
-        localStorage.setItem("currentBGName", name);
-    }
-    updateUI();
+    if (ownedItems.includes(name)) { if (type === 'bg') currentBGName = name; }
+    else if (tokens >= price) { tokens -= price; ownedItems.push(name); if (type === 'bg') currentBGName = name; }
+    localStorage.setItem("parkourTokens", tokens); localStorage.setItem("ownedItems", JSON.stringify(ownedItems));
+    localStorage.setItem("currentBGName", currentBGName); updateUI();
 }
 
 function updateUI() {
     document.getElementById("tokenBoard").innerText = `Tokens: ${tokens}`;
     document.getElementById("highScoreBoard").innerText = `Best: ${highScore}m`;
     
-    // Background Buttons Styling
     ["White", "Blue", "Sunset", "Space"].forEach(bg => {
-        const btn = document.getElementById(`btn-bg-${bg}`);
-        const priceSpan = document.getElementById(`price-${bg}`);
+        const btn = document.getElementById(`btn-bg-${bg}`), priceSpan = document.getElementById(`price-${bg}`);
         if (btn) {
-            btn.classList.remove("selected", "owned");
-            if (currentBGName === bg) {
-                btn.classList.add("selected");
-                priceSpan.innerText = "EQUIPPED";
-            } else if (ownedItems.includes(bg)) {
-                btn.classList.add("owned");
-                priceSpan.innerText = "EQUIP";
-            }
+            btn.classList.toggle("selected", currentBGName === bg);
+            priceSpan.innerText = (currentBGName === bg) ? "EQUIPPED" : (ownedItems.includes(bg) ? "EQUIP" : priceSpan.innerText);
         }
     });
 
-    // Skin Selection Highlighting
     const skinData = [
-        {id: "skin-orange", req: 0, color: "#ff5722"}, {id: "skin-blue", req: 50, color: "#2196f3"}, 
-        {id: "skin-green", req: 100, color: "#4caf50"}, {id: "skin-purple", req: 150, color: "#9c27b0"},
-        {id: "skin-gold", req: 200, color: "#ffcc00"}, {id: "skin-mint", req: 250, color: "#1de9b6"},
-        {id: "skin-striped", req: 300, color: "striped"}, {id: "skin-camo", req: 350, color: "camo"},
-        {id: "skin-ghost", req: 400, color: "ghost"}, {id: "skin-lava", req: 450, color: "lava"},
-        {id: "skin-rainbow", req: 500, color: "rainbow"}, {id: "skin-void", req: 1000, color: "void"}
+        {id: "skin-orange", req: 0}, {id: "skin-blue", req: 50}, {id: "skin-green", req: 100}, {id: "skin-purple", req: 150},
+        {id: "skin-gold", req: 200}, {id: "skin-mint", req: 250}, {id: "skin-striped", req: 300}, {id: "skin-camo", req: 350},
+        {id: "skin-ghost", req: 400}, {id: "skin-lava", req: 450}, {id: "skin-rainbow", req: 500}, {id: "skin-void", req: 1000}
     ];
-    
     skinData.forEach(s => {
         const btn = document.getElementById(s.id);
         if (btn) {
-            btn.classList.toggle("selected", playerColor === s.color);
-            if (highScore >= s.req) btn.classList.remove("locked");
-            else btn.classList.add("locked");
+            if (highScore >= s.req) {
+                btn.classList.remove("locked"); btn.innerText = (selectedSkinId === s.id) ? "ACTIVE" : "SELECT";
+                btn.classList.toggle("selected", selectedSkinId === s.id);
+            } else { btn.classList.add("locked"); btn.innerText = s.req + "m"; }
         }
     });
 }
 
-function changeSkin(color, req) {
-    if (highScore >= req) {
-        playerColor = color;
-        localStorage.setItem("playerColor", color);
-        updateUI();
-        skinMenu.style.display = "none";
-    }
+function changeSkin(color, req, id) {
+    if (highScore >= req) { playerColor = color; selectedSkinId = id; localStorage.setItem("playerColor", color); localStorage.setItem("selectedSkinId", id); updateUI(); skinMenu.style.display = "none"; }
 }
 
-// Key Rebinding Logic
 let bindingAction = null;
-const bindMap = { Jump: "bindJump", Left: "bindLeft", Right: "bindRight" };
-Object.keys(bindMap).forEach(action => {
-    const btn = document.getElementById(bindMap[action]);
-    btn.innerText = config[action];
-    btn.onclick = () => {
-        bindingAction = action;
-        btn.innerText = "...";
-        btn.classList.add("waiting");
-    };
+const bindButtons = { Jump: "bindJump", Left: "bindLeft", Right: "bindRight" };
+Object.keys(bindButtons).forEach(action => {
+    const btn = document.getElementById(bindButtons[action]);
+    btn.onclick = () => { bindingAction = action; btn.innerText = "..."; btn.classList.add("waiting"); };
 });
 
 window.addEventListener("keydown", e => {
     if (bindingAction) {
-        e.preventDefault();
-        config[bindingAction] = e.code;
-        localStorage.setItem("key" + bindingAction, e.code);
-        document.getElementById(bindMap[bindingAction]).innerText = e.code;
-        document.getElementById(bindMap[bindingAction]).classList.remove("waiting");
-        bindingAction = null;
-        return;
+        e.preventDefault(); config[bindingAction] = e.code; localStorage.setItem("key" + bindingAction, e.code);
+        document.getElementById(bindButtons[bindingAction]).innerText = e.code;
+        document.getElementById(bindButtons[bindingAction]).classList.remove("waiting");
+        bindingAction = null; return;
     }
-    if ((e.code === config.Jump || e.code === "Space" || e.code === "ArrowUp") && !player.jumping && gameActive) {
-        player.velY = JUMP_FORCE;
-        player.jumping = true;
-    }
+    if ((e.code === config.Jump || e.code === "Space" || e.code === "ArrowUp") && !player.jumping && gameActive) { player.velY = JUMP_FORCE; player.jumping = true; }
     keys[e.code] = true;
 });
 window.addEventListener("keyup", e => keys[e.code] = false);
 
 function init() {
-    player.x = 180; player.y = 500; player.velX = 0; player.velY = 0;
-    cameraY = 0; maxHeight = 0;
-    platforms = [{ x: 0, y: 580, width: 400, height: 20, type: 'normal' }];
-    items = [];
-    generatePlatforms();
-    gameActive = true;
+    player.x = 180; player.y = 500; player.velX = 0; player.velY = 0; cameraY = 0; maxHeight = 0;
+    platforms = [{ x: 0, y: 580, width: 400, height: 20, type: 'normal' }]; items = [];
+    generatePlatforms(); gameActive = true;
     mainMenu.style.display = "none"; shopMenu.style.display = "none"; settingsModal.style.display = "none";
-    updateUI();
-    update();
+    updateUI(); update();
 }
 
 function generatePlatforms() {
@@ -145,19 +96,8 @@ function generatePlatforms() {
     for (let i = 0; i < 500; i++) {
         lastY -= (90 + Math.random() * 40);
         let type = 'normal', roll = Math.random();
-        if (roll < 0.12) type = 'tramp';
-        else if (roll < 0.22) type = 'conveyor';
-        else if (roll < 0.32) type = 'crumble';
-
-        let plat = { 
-            x: Math.random() * 300, 
-            y: lastY, 
-            width: 80, // Restored width for playability
-            height: 12, 
-            type: type, 
-            speed: (Math.random() < 0.2 ? 2 : 0), 
-            beltDir: Math.random() > 0.5 ? 1.5 : -1.5 
-        };
+        if (roll < 0.1) type = 'tramp'; else if (roll < 0.2) type = 'conveyor'; else if (roll < 0.3) type = 'crumble';
+        let plat = { x: Math.random() * 300, y: lastY, width: 80, height: 12, type: type, speed: (Math.random() < 0.2 ? 2 : 0), beltDir: 1.5 };
         platforms.push(plat);
         if (Math.random() < 0.3) items.push({ x: plat.x + 35, y: plat.y - 25, collected: false });
     }
@@ -165,104 +105,50 @@ function generatePlatforms() {
 
 function update() {
     if (!gameActive) return;
-    
-    if (keys[config.Left] || keys["ArrowLeft"]) player.velX -= 1;
-    if (keys[config.Right] || keys["ArrowRight"]) player.velX += 1;
-    
-    player.velX *= 0.8; 
-    player.velX += player.conveyorForce;
-    player.velY += gravity;
-    player.x += player.velX; 
-    player.y += player.velY;
-    
-    if (player.x < -30) player.x = canvas.width;
-    if (player.x > canvas.width) player.x = -30;
+    if (keys[config.Left] || keys["ArrowLeft"]) player.velX -= 1; if (keys[config.Right] || keys["ArrowRight"]) player.velX += 1;
+    player.velX *= 0.8; player.velX += player.conveyorForce; player.velY += gravity; player.x += player.velX; player.y += player.velY;
+    if (player.x < -30) player.x = canvas.width; if (player.x > canvas.width) player.x = -30;
     player.conveyorForce = 0;
-
     platforms.forEach(plat => {
-        if (player.velY > 0 && player.y + 30 > plat.y && player.y + 30 < plat.y + 15 + player.velY &&
-            player.x + 30 > plat.x && player.x < plat.x + plat.width) {
-            if (plat.type === 'tramp') {
-                player.velY = BOUNCE_FORCE;
-                player.jumping = true;
-            } else {
-                player.velY = 0; player.y = plat.y - 30; player.jumping = false;
-                if (plat.type === 'conveyor') player.conveyorForce = plat.beltDir;
-            }
+        if (player.velY > 0 && player.y + 30 > plat.y && player.y + 30 < plat.y + 15 + player.velY && player.x + 30 > plat.x && player.x < plat.x + plat.width) {
+            if (plat.type === 'tramp') { player.velY = BOUNCE_FORCE; player.jumping = true; }
+            else { player.velY = 0; player.y = plat.y - 30; player.jumping = false; if (plat.type === 'conveyor') player.conveyorForce = plat.beltDir; }
         }
         if (plat.speed) { plat.x += plat.speed; if (plat.x < 0 || plat.x > 320) plat.speed *= -1; }
     });
-
-    items.forEach(item => {
-        if (!item.collected && Math.abs(player.x - item.x) < 30 && Math.abs(player.y - item.y) < 30) {
-            item.collected = true; tokens++; updateUI();
-        }
-    });
-
+    items.forEach(item => { if (!item.collected && Math.abs(player.x - item.x) < 30 && Math.abs(player.y - item.y) < 30) { item.collected = true; tokens++; updateUI(); } });
     if (player.y < cameraY + 300) cameraY = player.y - 300;
     let h = Math.max(0, Math.floor((500 - player.y) / 10));
     if (h > maxHeight) { maxHeight = h; document.getElementById("scoreBoard").innerText = `Height: ${maxHeight}m`; }
     if (player.y > cameraY + 750) gameOver();
-    
-    draw();
-    requestAnimationFrame(update);
+    draw(); requestAnimationFrame(update);
 }
 
 function draw() {
-    // Background Drawing
     let grad = ctx.createLinearGradient(0, 0, 0, canvas.height);
     if (currentBGName === "White") { grad.addColorStop(0, "#fff"); grad.addColorStop(1, "#eee"); }
     else if (currentBGName === "Blue") { grad.addColorStop(0, "#4facfe"); grad.addColorStop(1, "#00f2fe"); }
     else if (currentBGName === "Sunset") { grad.addColorStop(0, "#ff8c00"); grad.addColorStop(1, "#ff0080"); }
     else if (currentBGName === "Space") { grad.addColorStop(0, "#0f0c29"); grad.addColorStop(1, "#24243e"); }
-    ctx.fillStyle = grad;
-    ctx.fillRect(0, 0, canvas.width, canvas.height);
-
+    ctx.fillStyle = grad; ctx.fillRect(0, 0, canvas.width, canvas.height);
     ctx.save(); ctx.translate(0, -cameraY);
-    
     platforms.forEach(p => {
-        if (p.type === 'tramp') ctx.fillStyle = "#e91e63";
-        else if (p.type === 'conveyor') ctx.fillStyle = "#757575";
-        else if (p.type === 'crumble') ctx.fillStyle = "#ffeb3b";
-        else ctx.fillStyle = "#455a64";
+        ctx.fillStyle = p.type === 'tramp' ? "#e91e63" : (p.type === 'conveyor' ? "#757575" : (p.type === 'crumble' ? "#ffeb3b" : "#455a64"));
         ctx.fillRect(p.x, p.y, p.width, p.height);
     });
-    
     items.forEach(item => { if (!item.collected) { ctx.fillStyle = "#ffeb3b"; ctx.beginPath(); ctx.arc(item.x+5, item.y+5, 8, 0, Math.PI*2); ctx.fill(); } });
-    
-    // Player Skin Drawing Logic
-    if (playerColor === 'rainbow') {
-        let hueVal = (Date.now() / 10) % 360;
-        ctx.fillStyle = `hsl(${hueVal}, 100%, 50%)`;
-    } else if (playerColor === 'void') {
-        ctx.fillStyle = "black"; ctx.shadowBlur = 15; ctx.shadowColor = "white";
-    } else if (playerColor === 'ghost') {
-        ctx.globalAlpha = 0.5; ctx.fillStyle = "white";
-    } else {
-        ctx.fillStyle = playerColor;
-    }
-    
-    ctx.fillRect(player.x, player.y, 30, 30);
-    ctx.globalAlpha = 1.0; ctx.shadowBlur = 0; ctx.restore();
+    if (playerColor === 'rainbow') { ctx.fillStyle = `hsl(${(Date.now() / 10) % 360}, 100%, 50%)`; }
+    else if (playerColor === 'void') { ctx.fillStyle = "black"; ctx.shadowBlur = 15; ctx.shadowColor = "white"; }
+    else if (playerColor === 'ghost') { ctx.globalAlpha = 0.5; ctx.fillStyle = "white"; }
+    else { ctx.fillStyle = playerColor; }
+    ctx.fillRect(player.x, player.y, 30, 30); ctx.globalAlpha = 1.0; ctx.shadowBlur = 0; ctx.restore();
 }
 
-function gameOver() {
-    gameActive = false;
-    if (maxHeight > highScore) { highScore = maxHeight; localStorage.setItem("parkourHigh", highScore); }
-    mainMenu.style.display = "flex";
-    updateUI();
-}
-
-// Mobile Buttons
+function gameOver() { gameActive = false; mainMenu.style.display = "flex"; updateUI(); }
 const setupBtn = (id, act) => {
     const btn = document.getElementById(id);
-    btn.ontouchstart = (e) => {
-        e.preventDefault();
-        if (act === "Jump") { if (!player.jumping && gameActive) { player.velY = JUMP_FORCE; player.jumping = true; } }
-        else keys[config[act]] = true;
-    };
+    btn.ontouchstart = (e) => { e.preventDefault(); if (act === "Jump") { if (!player.jumping && gameActive) { player.velY = JUMP_FORCE; player.jumping = true; } } else keys[config[act]] = true; };
     btn.ontouchend = () => keys[config[act]] = false;
 };
 setupBtn("leftBtn", "Left"); setupBtn("rightBtn", "Right"); setupBtn("jumpBtn", "Jump");
-
 updateUI();
