@@ -3,50 +3,57 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Cube Parkour: 1000m Challenge</title>
+    <title>Cube Parkour Pro</title>
     <link rel="stylesheet" href="styles.css">
 </head>
 <body>
-    <div id="ui">
-        <div id="scoreBoard">Height: 0m</div>
-        <div id="highScoreBoard">Best: 0m</div>
-    </div>
+    <div id="game-container">
+        <div id="ui-layer">
+            <div id="scoreBoard">Height: 0m</div>
+            <div id="highScoreBoard">Best: 0m</div>
+            <button id="pauseBtn">⏸</button>
+        </div>
 
-    <canvas id="gameCanvas" width="400" height="600"></canvas>
+        <canvas id="gameCanvas" width="400" height="600"></canvas>
 
-    <div id="overlay">
-        <h2 id="statusText">CUBE PARKOUR</h2>
-        <button id="startBtn">START GAME</button>
-    </div>
+        <div id="mainGui" class="overlay">
+            <h1 id="guiTitle">CUBE PARKOUR</h1>
+            <div class="menu-buttons">
+                <button class="menu-btn" onclick="startGame()">START GAME</button>
+                <button class="menu-btn" onclick="openSkins()">SKINS</button>
+                <button class="menu-btn" onclick="openSettings()">SETTINGS</button>
+            </div>
+        </div>
 
-    <div id="skinMenu">
-        <h3>Skins</h3>
-        <div class="skin-grid">
-            <button class="skin-btn" id="skin-orange" onclick="changeSkin('#ff5722', 0)">0m</button>
-            <button class="skin-btn" id="skin-blue" onclick="changeSkin('#2196f3', 50)">50m</button>
-            <button class="skin-btn" id="skin-green" onclick="changeSkin('#4caf50', 100)">100m</button>
-            <button class="skin-btn" id="skin-purple" onclick="changeSkin('#9c27b0', 150)">150m</button>
-            <button class="skin-btn" id="skin-gold" onclick="changeSkin('#ffcc00', 200)">200m</button>
-            <button class="skin-btn" id="skin-mint" onclick="changeSkin('#1de9b6', 250)">250m</button>
-            <button class="skin-btn" id="skin-striped" onclick="changeSkin('striped', 300)">300m</button>
-            <button class="skin-btn" id="skin-camo" onclick="changeSkin('camo', 350)">350m</button>
-            <button class="skin-btn" id="skin-ghost" onclick="changeSkin('ghost', 400)">400m</button>
-            <button class="skin-btn" id="skin-lava" onclick="changeSkin('lava', 450)">450m</button>
-            <button class="skin-btn" id="skin-rainbow" onclick="changeSkin('rainbow', 500)">500m</button>
-            <button class="skin-btn" id="skin-neon" onclick="changeSkin('neon', 600)">600m</button>
-            <button class="skin-btn" id="skin-diamond" onclick="changeSkin('diamond', 700)">700m</button>
-            <button class="skin-btn" id="skin-ruby" onclick="changeSkin('ruby', 800)">800m</button>
-            <button class="skin-btn" id="skin-emerald" onclick="changeSkin('emerald', 900)">900m</button>
-            <button class="skin-btn" id="skin-void" onclick="changeSkin('void', 1000)">1000m</button>
+        <div id="skinsGui" class="overlay hidden">
+            <h2>SKINS</h2>
+            <div id="skinGrid" class="skin-grid"></div>
+            <button class="menu-btn back-btn" onclick="closeOverlay()">BACK</button>
+        </div>
+
+        <div id="settingsGui" class="overlay hidden">
+            <h2>SETTINGS</h2>
+            <div class="setting-item">
+                <span>Left:</span>
+                <button id="bind-left" class="bind-btn" onclick="rebind('left')">A</button>
+            </div>
+            <div class="setting-item">
+                <span>Right:</span>
+                <button id="bind-right" class="bind-btn" onclick="rebind('right')">D</button>
+            </div>
+            <div class="setting-item">
+                <span>Jump:</span>
+                <button id="bind-jump" class="bind-btn" onclick="rebind('jump')">Space</button>
+            </div>
+            <button class="menu-btn back-btn" onclick="closeOverlay()">SAVE & BACK</button>
+        </div>
+
+        <div class="mobile-controls">
+            <button class="ctrl-btn" id="leftBtn">◀</button>
+            <button class="ctrl-btn" id="jumpBtn">JUMP</button>
+            <button class="ctrl-btn" id="rightBtn">▶</button>
         </div>
     </div>
-
-    <div class="controls">
-        <button class="control-btn" id="leftBtn">◀</button>
-        <button class="control-btn" id="jumpBtn">JUMP</button>
-        <button class="control-btn" id="rightBtn">▶</button>
-    </div>
-
     <script src="script.js"></script>
 </body>
 </html>
