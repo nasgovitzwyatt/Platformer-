@@ -19,7 +19,7 @@ canvas { background: white; border: 4px solid #01579b; max-width: 95vw; height: 
 .menu-btn { 
     padding: 15px; font-size: 18px; font-weight: bold; border: none; border-radius: 10px; 
     cursor: pointer; background: #444; color: white; transition: 0.1s;
-    pointer-events: auto; /* Ensures the button is clickable */
+    pointer-events: auto;
 }
 .menu-btn.primary { background: #ff5722; }
 .menu-btn:hover { background: #555; }
@@ -31,7 +31,11 @@ canvas { background: white; border: 4px solid #01579b; max-width: 95vw; height: 
     padding: 12px; border-radius: 8px;
 }
 .bind-btn { background: #666; border: none; color: #39ff14; padding: 6px 12px; border-radius: 4px; min-width: 90px; font-weight: bold; cursor: pointer; }
-.bind-btn.waiting { background: #ff5722; color: white; }
+.bind-btn.waiting { background: #ff5722; color: white; animation: blink 1s infinite; }
+
+@keyframes blink { 
+    0% { opacity: 1; } 50% { opacity: 0.5; } 100% { opacity: 1; } 
+}
 
 .controls { display: flex; gap: 15px; margin-top: 10px; z-index: 10; }
 .control-btn { 
@@ -49,10 +53,10 @@ canvas { background: white; border: 4px solid #01579b; max-width: 95vw; height: 
 }
 #skinMenu h3 { font-size: 12px; margin: 0 0 5px 0; color: #333; }
 .skin-grid { display: flex; flex-direction: column; gap: 5px; }
-.skin-btn { width: 100%; height: 35px; border: none; border-radius: 5px; font-weight: bold; color: white; font-size: 9px; cursor: pointer; pointer-events: auto; }
+.skin-btn { width: 100%; height: 35px; border: none; border-radius: 5px; font-weight: bold; color: white; font-size: 9px; cursor: pointer; }
 .skin-btn.locked { background: #bbb !important; opacity: 0.6; cursor: not-allowed; }
 
-/* Skin colors remain the same as previous code... */
+/* Skin colors */
 #skin-orange { background: #ff5722; }
 #skin-blue { background: #2196f3; }
 #skin-green { background: #4caf50; }
