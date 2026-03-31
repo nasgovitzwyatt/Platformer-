@@ -15,6 +15,7 @@ canvas {
     border: 4px solid #01579b;
     max-width: 95vw;
     height: auto;
+    z-index: 1;           /* below menu */
 }
 
 .controls { display: flex; gap: 15px; margin-top: 10px; }
@@ -35,7 +36,8 @@ canvas {
     background: rgba(255,255,255,0.95);
     box-shadow: 0 10px 30px rgba(0,0,0,0.2);
     text-align: center;
-    z-index: 50;
+    z-index: 1000;        /* on top */
+    pointer-events: auto;  /* clickable */
 }
 
 .menu.hidden { display: none; }
