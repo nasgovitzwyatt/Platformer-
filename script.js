@@ -42,6 +42,7 @@ function init() {
     generatePlatforms();
 
     gameActive = true;
+    canvas.style.pointerEvents = "auto"; // enable canvas input
     update();
 }
 
@@ -109,6 +110,7 @@ function draw() {
 
 function gameOver() {
     gameActive = false;
+    canvas.style.pointerEvents = "none"; // prevent accidental clicks
 
     if (maxHeight > highScore) {
         highScore = maxHeight;
@@ -125,6 +127,7 @@ function gameOver() {
 /* MENU BUTTONS */
 playBtn.onclick = () => {
     menu.classList.add("hidden");
+    canvas.style.pointerEvents = "auto"; // re-enable clicks
     init();
 };
 
