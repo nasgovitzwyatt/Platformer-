@@ -1,58 +1,56 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Cube Parkour: 1000m Challenge</title>
-<link rel="stylesheet" href="styles.css">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Cube Parkour: 1000m Challenge</title>
+    <link rel="stylesheet" href="styles.css">
 </head>
 <body>
-
-<div id="ui">
-    <div id="scoreBoard">Height: 0m</div>
-    <div id="highScoreBoard">Best: 0m</div>
-</div>
-
-<canvas id="gameCanvas" width="400" height="600"></canvas>
-
-<!-- MENU -->
-<div id="menu" class="menu">
-    <h1 class="menu-title">CUBE PARKOUR</h1>
-    <div class="menu-buttons">
-        <button id="playBtn" class="menu-btn primary">PLAY</button>
-        <button id="skinsBtn" class="menu-btn">SKINS</button>
-        <button class="menu-btn disabled">COMING SOON</button>
+    <div id="ui">
+        <div id="scoreBoard">Height: 0m</div>
+        <div id="highScoreBoard">Best: 0m</div>
     </div>
 
-    <div id="skinsPanel" class="skins-panel hidden">
-        <h3>Skins</h3>
-        <div class="skin-grid">
-            <button id="skin-orange" class="skin-btn">0m</button>
-            <button id="skin-blue" class="skin-btn">50m</button>
-            <button id="skin-green" class="skin-btn">100m</button>
-            <button id="skin-purple" class="skin-btn">150m</button>
-            <button id="skin-gold" class="skin-btn">200m</button>
-            <button id="skin-mint" class="skin-btn">250m</button>
-            <button id="skin-striped" class="skin-btn">300m</button>
-            <button id="skin-camo" class="skin-btn">350m</button>
-            <button id="skin-ghost" class="skin-btn">400m</button>
-            <button id="skin-lava" class="skin-btn">450m</button>
-            <button id="skin-rainbow" class="skin-btn">500m</button>
-            <button id="skin-neon" class="skin-btn">600m</button>
-            <button id="skin-diamond" class="skin-btn">700m</button>
-            <button id="skin-ruby" class="skin-btn">800m</button>
-            <button id="skin-emerald" class="skin-btn">900m</button>
-            <button id="skin-void" class="skin-btn">1000m</button>
+    <canvas id="gameCanvas" width="400" height="600"></canvas>
+
+    <div id="mainMenu" class="menu-screen">
+        <h1 id="statusText">CUBE PARKOUR</h1>
+        <div class="menu-buttons">
+            <button id="startBtn" class="menu-btn primary">START GAME</button>
+            <button id="skinMenuBtn" class="menu-btn">SKINS</button>
+            <button id="settingsBtn" class="menu-btn">SETTINGS</button>
         </div>
     </div>
-</div>
 
-<div class="controls">
-    <button class="control-btn" id="leftBtn">◀</button>
-    <button class="control-btn" id="jumpBtn">JUMP</button>
-    <button class="control-btn" id="rightBtn">▶</button>
-</div>
+    <div id="settingsModal" class="menu-screen" style="display: none;">
+        <h2>SETTINGS</h2>
+        <div class="setting-item">
+            <span>Jump:</span>
+            <button id="bindJump" class="bind-btn">SPACE</button>
+        </div>
+        <div class="setting-item">
+            <span>Left:</span>
+            <button id="bindLeft" class="bind-btn">LEFT</button>
+        </div>
+        <div class="setting-item">
+            <span>Right:</span>
+            <button id="bindRight" class="bind-btn">RIGHT</button>
+        </div>
+        <button id="backToMenu" class="menu-btn" style="margin-top:20px;">BACK</button>
+    </div>
 
-<script src="script.js"></script>
-</body>
-</html>
+    <div id="skinMenu" style="display: none;">
+        <h3>Skins</h3>
+        <div class="skin-grid">
+            <button class="skin-btn" id="skin-orange" onclick="changeSkin('#ff5722', 0)">0m</button>
+            <button class="skin-btn" id="skin-blue" onclick="changeSkin('#2196f3', 50)">50m</button>
+            <button class="skin-btn" id="skin-green" onclick="changeSkin('#4caf50', 100)">100m</button>
+            <button class="skin-btn" id="skin-purple" onclick="changeSkin('#9c27b0', 150)">150m</button>
+            <button class="skin-btn" id="skin-gold" onclick="changeSkin('#ffcc00', 200)">200m</button>
+            <button class="skin-btn" id="skin-mint" onclick="changeSkin('#1de9b6', 250)">250m</button>
+            <button class="skin-btn" id="skin-striped" onclick="changeSkin('striped', 300)">300m</button>
+            <button class="skin-btn" id="skin-camo" onclick="changeSkin('camo', 350)">350m</button>
+            <button class="skin-btn" id="skin-ghost" onclick="changeSkin('ghost', 400)">400m</button>
+            <button class="skin-btn" id="skin-lava" onclick="changeSkin('lava', 450)">450m</button>
+            <button class="skin-btn" id="skin-rainbow" onclick="changeSkin('rainbow', 500)">500m</button>
