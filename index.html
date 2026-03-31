@@ -3,50 +3,26 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Cube Parkour Pro</title>
+    <title>Cube Parkour Classic</title>
     <link rel="stylesheet" href="styles.css">
 </head>
 <body>
+    <div id="ui">
+        <div id="scoreBoard">Height: 0m</div>
+        <div id="highScoreBoard">Best: 0m</div>
+    </div>
 
-    <div id="game-app">
-        <canvas id="gameCanvas" width="400" height="600"></canvas>
+    <canvas id="gameCanvas" width="400" height="600"></canvas>
 
-        <div id="hud">
-            <div id="stats">
-                <span id="scoreBoard">0m</span>
-                <span id="highScoreBoard">Best: 0m</span>
-            </div>
-            <button id="pauseBtn" onclick="togglePause()">⏸</button>
-        </div>
+    <div id="overlay">
+        <h2 id="statusText">CUBE PARKOUR</h2>
+        <button id="startBtn">START GAME</button>
+    </div>
 
-        <div id="menu-system">
-            <div id="mainGui" class="screen">
-                <h1>CUBE PARKOUR</h1>
-                <button class="btn-orange" onclick="startGame()">START GAME</button>
-                <button class="btn-grey" onclick="openSkins()">SKINS</button>
-                <button class="btn-grey" onclick="openSettings()">SETTINGS</button>
-            </div>
-
-            <div id="skinsGui" class="screen hidden">
-                <h2>SELECT SKIN</h2>
-                <div id="skinGrid"></div>
-                <button class="btn-grey" onclick="backToMain()">BACK</button>
-            </div>
-
-            <div id="settingsGui" class="screen hidden">
-                <h2>SETTINGS</h2>
-                <p>Left: <button id="bind-left" onclick="rebind('left')">A</button></p>
-                <p>Right: <button id="bind-right" onclick="rebind('right')">D</button></p>
-                <p>Jump: <button id="bind-jump" onclick="rebind('jump')">Space</button></p>
-                <button class="btn-grey" onclick="backToMain()">SAVE</button>
-            </div>
-        </div>
-
-        <div id="mobile-controls">
-            <button class="m-btn" id="leftBtn">◀</button>
-            <button class="m-btn" id="jumpBtn">JUMP</button>
-            <button class="m-btn" id="rightBtn">▶</button>
-        </div>
+    <div class="controls">
+        <button class="control-btn" id="leftBtn">◀</button>
+        <button class="control-btn" id="jumpBtn">JUMP</button>
+        <button class="control-btn" id="rightBtn">▶</button>
     </div>
 
     <script src="script.js"></script>
