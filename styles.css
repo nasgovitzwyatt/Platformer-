@@ -1,77 +1,299 @@
+/* --- GLOBAL LAYOUT --- */
 body {
-    display: flex; flex-direction: column; align-items: center; justify-content: center;
-    min-height: 100vh; margin: 0; background: #ffffff; font-family: 'Segoe UI', sans-serif; overflow: hidden;
-    touch-action: none; position: relative;
+    display: flex; 
+    flex-direction: column; 
+    align-items: center; 
+    justify-content: center;
+    min-height: 100vh; 
+    margin: 0; 
+    background: #ffffff; /* Default Start Background */
+    font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; 
+    overflow: hidden;
+    touch-action: none;
+    position: relative;
 }
 
-#ui { display: flex; gap: 10px; margin-bottom: 8px; z-index: 5; }
+/* --- TOP UI BAR --- */
+#ui { 
+    display: flex; 
+    gap: 10px; 
+    margin-bottom: 8px; 
+    z-index: 5; 
+}
+
 #scoreBoard, #highScoreBoard, #tokenBoard { 
-    font-size: 14px; font-weight: bold; background: white; padding: 6px 12px; border-radius: 20px; 
+    font-size: 14px; 
+    font-weight: bold; 
+    background: white; 
+    padding: 6px 12px; 
+    border-radius: 20px; 
     box-shadow: 0 4px 10px rgba(0,0,0,0.1);
 }
-#tokenBoard { background: #ffeb3b; color: #333; border: 2px solid #fbc02d; }
 
-canvas { background: white; border: 4px solid #333; max-width: 95vw; height: auto; z-index: 1; border-radius: 10px; }
-
-/* --- MENU SCREENS --- */
-.menu-screen {
-    position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-    background: rgba(15, 15, 25, 0.95); backdrop-filter: blur(12px);
-    display: flex; flex-direction: column; align-items: center; justify-content: center;
-    z-index: 999; color: white;
+#tokenBoard { 
+    background: #ffeb3b; 
+    color: #333; 
+    border: 2px solid #fbc02d; 
 }
 
-.game-title { font-size: 42px; letter-spacing: 5px; margin-bottom: 30px; color: #ff5722; text-shadow: 0 0 20px rgba(255,87,34,0.5); }
+/* --- GAME CANVAS --- */
+canvas { 
+    background: white; 
+    border: 4px solid #333; 
+    max-width: 95vw; 
+    height: auto; 
+    z-index: 1; 
+    border-radius: 10px; 
+}
 
-/* VERTICAL BUTTON FIX */
+/* --- MENU SCREENS (Shared) --- */
+.menu-screen {
+    position: fixed; 
+    top: 0; 
+    left: 0;
+    width: 100%; 
+    height: 100%;
+    background: rgba(15, 15, 25, 0.95); /* Deep dark professional pro-look */
+    backdrop-filter: blur(12px);
+    display: flex; 
+    flex-direction: column; 
+    align-items: center; 
+    justify-content: center;
+    z-index: 999; 
+    color: white; 
+}
+
+.game-title { 
+    font-size: 42px; 
+    letter-spacing: 5px; 
+    margin-bottom: 30px; 
+    color: #ff5722; 
+    text-shadow: 0 0 20px rgba(255,87,34,0.5); 
+    text-transform: uppercase;
+}
+
+/* VERTICAL START MENU FIX */
 .menu-buttons { 
-    display: flex; flex-direction: column !important; /* Force vertical */
-    gap: 15px; width: 240px; 
+    display: flex; 
+    flex-direction: column !important; /* Forces vertical stack */
+    gap: 15px; 
+    width: 240px; 
 }
 
 .menu-btn { 
-    padding: 16px; font-size: 16px; font-weight: 800; border: none; border-radius: 12px; 
-    cursor: pointer; background: #2a2a3a; color: white; transition: 0.2s;
-    text-transform: uppercase; letter-spacing: 1px;
+    padding: 16px; 
+    font-size: 16px; 
+    font-weight: 800; 
+    border: none; 
+    border-radius: 12px; 
+    cursor: pointer; 
+    background: #2a2a3a; 
+    color: white; 
+    transition: 0.2s;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    pointer-events: auto;
 }
-.menu-btn.primary { background: #ff5722; box-shadow: 0 4px 15px rgba(255,87,34,0.3); }
-.menu-btn.shop-gold { background: #ffc107; color: #000; }
-.menu-btn.secondary { background: #555; width: 200px; }
-.menu-btn:hover { transform: translateY(-2px); filter: brightness(1.2); }
+
+.menu-btn.primary { 
+    background: #ff5722; 
+    box-shadow: 0 4px 15px rgba(255,87,34,0.3); 
+}
+
+.menu-btn.shop-gold { 
+    background: #ffc107; 
+    color: #000; 
+}
+
+.menu-btn.secondary { 
+    background: #555; 
+    width: 200px; 
+    margin-top: 20px;
+}
+
+.menu-btn:hover { 
+    transform: translateY(-2px); 
+    filter: brightness(1.2); 
+}
+
+.menu-btn:active { 
+    transform: scale(0.95); 
+}
 
 /* --- PROFESSIONAL SHOP STYLING --- */
 .shop-title { color: #ffc107; margin-bottom: 20px; font-size: 28px; }
-.shop-grid-container { display: flex; gap: 20px; width: 90%; max-width: 500px; margin-bottom: 30px; }
+
+.shop-grid-container { 
+    display: flex; 
+    gap: 20px; 
+    width: 90%; 
+    max-width: 550px; 
+    margin-bottom: 10px; 
+}
 
 .shop-card { 
-    flex: 1; background: rgba(255,255,255,0.05); padding: 15px; border-radius: 15px; 
+    flex: 1; 
+    background: rgba(255,255,255,0.05); 
+    padding: 15px; 
+    border-radius: 15px; 
     border: 1px solid rgba(255,255,255,0.1); 
 }
-.shop-card h3 { font-size: 14px; color: #aaa; margin-bottom: 15px; text-align: left; border-bottom: 1px solid #444; padding-bottom: 5px; }
 
-.shop-item-list { display: flex; flex-direction: column; gap: 10px; }
-
-.shop-item {
-    display: flex; justify-content: space-between; align-items: center;
-    background: #1a1a2a; border: 1px solid #333; color: white;
-    padding: 12px; border-radius: 8px; cursor: pointer; font-size: 13px; font-weight: 600;
+.shop-card h3 { 
+    font-size: 13px; 
+    color: #aaa; 
+    margin-bottom: 15px; 
+    text-align: left; 
+    border-bottom: 1px solid #444; 
+    padding-bottom: 5px; 
+    text-transform: uppercase;
 }
+
+.shop-item-list { 
+    display: flex; 
+    flex-direction: column; 
+    gap: 10px; 
+}
+
+/* SHOP ITEM STATES */
+.shop-item {
+    display: flex; 
+    justify-content: space-between; 
+    align-items: center;
+    background: #1a1a2a; 
+    border: 1px solid #333; 
+    color: white;
+    padding: 12px; 
+    border-radius: 8px; 
+    cursor: pointer; 
+    font-size: 13px; 
+    font-weight: 600;
+    transition: 0.2s;
+}
+
 .shop-item:hover { border-color: #ffc107; background: #252535; }
-.shop-item .price { color: #ffc107; font-size: 11px; background: rgba(255,193,7,0.1); padding: 2px 6px; border-radius: 4px; }
 
-/* --- REST OF CSS --- */
-.setting-item { display: flex; justify-content: space-between; align-items: center; width: 280px; margin-bottom: 12px; background: rgba(255,255,255,0.05); padding: 12px; border-radius: 8px; }
-.bind-btn { background: #333; border: 1px solid #555; color: #39ff14; padding: 6px 12px; border-radius: 4px; min-width: 100px; font-weight: bold; }
+.shop-item.selected {
+    border-color: #39ff14 !important;
+    background: rgba(57, 255, 20, 0.1) !important;
+}
 
-#skinMenu { position: fixed; right: 10px; top: 50%; transform: translateY(-50%); background: #1a1a1a; padding: 12px; border-radius: 15px; width: 90px; z-index: 1001; border: 1px solid #333; }
+.shop-item.owned {
+    border-color: #2196f3;
+}
+
+.shop-item .price { 
+    color: #ffc107; 
+    font-size: 11px; 
+    background: rgba(255,193,7,0.1); 
+    padding: 2px 6px; 
+    border-radius: 4px; 
+}
+
+/* --- SETTINGS --- */
+.setting-item { 
+    display: flex; 
+    justify-content: space-between; 
+    align-items: center; 
+    width: 280px; 
+    margin-bottom: 12px; 
+    background: rgba(255,255,255,0.05); 
+    padding: 12px; 
+    border-radius: 8px; 
+}
+
+.bind-btn { 
+    background: #333; 
+    border: 1px solid #555; 
+    color: #39ff14; 
+    padding: 6px 12px; 
+    border-radius: 4px; 
+    min-width: 100px; 
+    font-weight: bold; 
+    cursor: pointer;
+}
+
+.bind-btn.waiting { 
+    background: #ff5722; 
+    color: white; 
+    animation: blink 1s infinite; 
+}
+
+@keyframes blink { 
+    0% { opacity: 1; } 50% { opacity: 0.5; } 100% { opacity: 1; } 
+}
+
+/* --- SKIN MENU (Sidebar) --- */
+#skinMenu { 
+    position: fixed; 
+    right: 10px; 
+    top: 50%; 
+    transform: translateY(-50%); 
+    background: #1a1a1a; 
+    padding: 12px; 
+    border-radius: 15px; 
+    width: 95px; 
+    z-index: 1001; 
+    border: 1px solid #333; 
+    max-height: 85vh; 
+    overflow-y: auto;
+}
+
 .skin-grid { display: flex; flex-direction: column; gap: 8px; }
-.skin-btn { width: 100%; height: 38px; border: none; border-radius: 8px; font-weight: bold; color: white; cursor: pointer; }
-.skin-btn.locked { opacity: 0.3; cursor: not-allowed; }
 
+.skin-btn { 
+    width: 100%; 
+    height: 38px; 
+    border: none; 
+    border-radius: 8px; 
+    font-weight: bold; 
+    color: white; 
+    cursor: pointer; 
+    transition: 0.2s;
+}
+
+/* SKIN SELECTION FEEDBACK */
+.skin-btn.selected {
+    outline: 3px solid #39ff14;
+    outline-offset: 2px;
+}
+
+.skin-btn.locked { 
+    opacity: 0.2; 
+    cursor: not-allowed; 
+    filter: grayscale(1);
+}
+
+/* --- MOBILE CONTROLS --- */
 .controls { display: flex; gap: 15px; margin-top: 15px; z-index: 10; }
-.control-btn { width: 70px; height: 70px; background: #222; color: white; border: 2px solid #444; border-radius: 50%; font-size: 16px; }
-#jumpBtn { width: 100px; border-radius: 20px; }
 
-#skin-orange { background: #ff5722; } #skin-blue { background: #2196f3; } #skin-green { background: #4caf50; }
-#skin-purple { background: #9c27b0; } #skin-gold { background: #ffcc00; color: black; } #skin-rainbow { background: linear-gradient(to right, red, orange, yellow, green, blue, purple); }
+.control-btn { 
+    width: 70px; 
+    height: 70px; 
+    background: #222; 
+    color: white; 
+    border: 2px solid #444; 
+    border-radius: 50%; 
+    font-size: 16px; 
+    touch-action: manipulation;
+}
+
+#jumpBtn { 
+    width: 110px; 
+    border-radius: 20px; 
+    background: #333;
+}
+
+/* --- SKIN COLORS --- */
+#skin-orange { background: #ff5722; }
+#skin-blue { background: #2196f3; }
+#skin-green { background: #4caf50; }
+#skin-purple { background: #9c27b0; }
+#skin-gold { background: #ffcc00; color: black; }
+#skin-mint { background: #1de9b6; color: black; }
+#skin-striped { background: repeating-linear-gradient(45deg, #333, #333 5px, #fff 5px, #fff 10px); }
+#skin-camo { background: #4b5320; }
+#skin-ghost { background: rgba(255, 255, 255, 0.4); border: 1px solid #fff; }
+#skin-lava { background: #d84315; border: 1px solid #ffab00; }
+#skin-rainbow { background: linear-gradient(to right, red, orange, yellow, green, blue, purple); }
 #skin-void { background: #000; border: 1px dotted #fff; }
