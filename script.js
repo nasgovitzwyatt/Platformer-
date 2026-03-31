@@ -4,27 +4,18 @@ const ctx = canvas.getContext("2d");
 // Game State
 let gravity = 0.5, cameraY = 0, maxHeight = 0, gameActive = false, isPaused = false;
 let highScore = localStorage.getItem("parkourHigh") || 0;
-let playerColor = "#ff5722", hue = 0;
+let playerColor = "#ff5722";
 const player = { x: 180, y: 500, width: 30, height: 30, velX: 0, velY: 0, jumping: false };
 let platforms = [];
-
-// Controls & Keybinds
 let keybinds = JSON.parse(localStorage.getItem("keybinds")) || { left: "KeyA", right: "KeyD", jump: "Space" };
 const keys = {};
 let rebindingKey = null;
 
-// Skin Data
 const skins = [
-    { name: "Orange", color: "#ff5722", req: 0 },
-    { name: "Blue", color: "#2196f3", req: 50 },
-    { name: "Green", color: "#4caf50", req: 100 },
-    { name: "Purple", color: "#9c27b0", req: 150 },
-    { name: "Gold", color: "#ffcc00", req: 200 },
-    { name: "Mint", color: "#1de9b6", req: 250 },
-    { name: "Rainbow", color: "rainbow", req: 500 }
+    { color: "#ff5722", req: 0 }, { color: "#2196f3", req: 50 }, { color: "#4caf50", req: 100 },
+    { color: "#9c27b0", req: 150 }, { color: "#ffcc00", req: 200 }, { color: "rainbow", req: 500 }
 ];
 
-// --- GUI Functions ---
 function startGame() {
     document.querySelectorAll('.overlay').forEach(el => el.classList.add('hidden'));
     initGame();
@@ -57,35 +48,33 @@ function closeOverlay() {
 
 function rebind(action) {
     rebindingKey = action;
-    document.getElementById(`bind-${action}`).innerText = "PRESS KEY...";
+    document.getElementById(`bind-${action}`).innerText = "...";
 }
 
 function updateBindLabels() {
     document.getElementById("bind-left").innerText = keybinds.left.replace("Key", "");
     document.getElementById("bind-right").innerText = keybinds.right.replace("Key", "");
-    document.getElementById("bind-jump").innerText = keybinds.jump.replace("Space", "SPC");
+    document.getElementById("bind-jump").innerText = keybinds.jump === "Space" ? "SPC" : keybinds.jump.replace("Key", "");
 }
 
-// --- Game Logic ---
 function initGame() {
-    player.x = 180; player.y = 500; player.velX = 0; player.velY = 0;
+    player.x = 180; player.y = 500; player.velX = 0; player.velY = 0; player.jumping = false;
     cameraY = 0; maxHeight = 0; gameActive = true; isPaused = false;
-    platforms = [{ x: 0, y: 580, width: 400, height: 20, type: 'normal' }];
-    generatePlatforms();
-    update();
+    platforms = [{ x: 0, y: 580, width: 400, height: 20 }];
+    for(let i=0; i<300; i++) {
+        platforms.push({ x: Math.random()*320, y: 580 - (i*120), width: 75, height: 12 });
+    }
+    requestAnimationFrame(mainLoop);
 }
 
-function generatePlatforms() {
-    let lastY = platforms[0].y;
-    for(let i=0; i<300; i++) {
-        lastY -= 100 + Math.random() * 40;
-        platforms.push({ x: Math.random()*320, y: lastY, width: 70, height: 12, type: 'normal' });
-    }
+function mainLoop() {
+    if (!gameActive || isPaused) return;
+    update();
+    draw();
+    requestAnimationFrame(mainLoop);
 }
 
 function update() {
-    if (!gameActive || isPaused) return;
-
     if (keys[keybinds.left]) player.velX = -5;
     else if (keys[keybinds.right]) player.velX = 5;
     else player.velX *= 0.8;
@@ -113,9 +102,6 @@ function update() {
         document.getElementById("guiTitle").innerText = "YOU FELL!";
         document.getElementById("mainGui").classList.remove("hidden");
     }
-
-    draw();
-    requestAnimationFrame(update);
 }
 
 function draw() {
@@ -129,14 +115,11 @@ function draw() {
     ctx.restore();
 }
 
-// --- Listeners ---
 window.addEventListener("keydown", e => {
     if (rebindingKey) {
         keybinds[rebindingKey] = e.code;
         localStorage.setItem("keybinds", JSON.stringify(keybinds));
-        rebindingKey = null;
-        updateBindLabels();
-        return;
+        rebindingKey = null; updateBindLabels(); return;
     }
     keys[e.code] = true;
     if (e.code === keybinds.jump && !player.jumping) { player.velY = -13; player.jumping = true; }
@@ -145,13 +128,14 @@ window.addEventListener("keyup", e => keys[e.code] = false);
 
 document.getElementById("pauseBtn").onclick = () => {
     isPaused = !isPaused;
-    if(!isPaused) update();
+    if(!isPaused) requestAnimationFrame(mainLoop);
     document.getElementById("pauseBtn").innerText = isPaused ? "▶" : "⏸";
 };
 
-// Mobile
-document.getElementById("leftBtn").ontouchstart = () => keys[keybinds.left] = true;
-document.getElementById("leftBtn").ontouchend = () => keys[keybinds.left] = false;
-document.getElementById("rightBtn").ontouchstart = () => keys[keybinds.right] = true;
-document.getElementById("rightBtn").ontouchend = () => keys[keybinds.right] = false;
-document.getElementById("jumpBtn").ontouchstart = () => { if(!player.jumping) { player.velY = -13; player.jumping = true; } };
+// Mobile Controls
+const bindMobile = (id, key) => {
+    const btn = document.getElementById(id);
+    btn.ontouchstart = (e) => { e.preventDefault(); if(id === 'jumpBtn') { if(!player.jumping){player.velY=-13; player.jumping=true;} } else keys[keybinds[key]] = true; };
+    btn.ontouchend = () => keys[keybinds[key]] = false;
+};
+bindMobile("leftBtn", "left"); bindMobile("rightBtn", "right"); bindMobile("jumpBtn", "jump");
