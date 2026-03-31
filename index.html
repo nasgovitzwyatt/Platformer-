@@ -14,6 +14,12 @@
 
     <canvas id="gameCanvas" width="400" height="600"></canvas>
 
+    <div class="controls">
+        <button class="control-btn" id="leftBtn">◀</button>
+        <button class="control-btn" id="jumpBtn">JUMP</button>
+        <button class="control-btn" id="rightBtn">▶</button>
+    </div>
+
     <div id="mainMenu" class="menu-screen">
         <h1 id="statusText">CUBE PARKOUR</h1>
         <div class="menu-buttons">
@@ -25,17 +31,18 @@
 
     <div id="settingsModal" class="menu-screen" style="display: none;">
         <h2>SETTINGS</h2>
+        <p style="font-size: 10px; margin-bottom: 20px;">Click a button then press a key</p>
         <div class="setting-item">
             <span>Jump:</span>
-            <button id="bindJump" class="bind-btn">SPACE</button>
+            <button id="bindJump" class="bind-btn">Space</button>
         </div>
         <div class="setting-item">
             <span>Left:</span>
-            <button id="bindLeft" class="bind-btn">LEFT</button>
+            <button id="bindLeft" class="bind-btn">ArrowLeft</button>
         </div>
         <div class="setting-item">
             <span>Right:</span>
-            <button id="bindRight" class="bind-btn">RIGHT</button>
+            <button id="bindRight" class="bind-btn">ArrowRight</button>
         </div>
         <button id="backToMenu" class="menu-btn" style="margin-top:20px;">BACK</button>
     </div>
@@ -54,3 +61,14 @@
             <button class="skin-btn" id="skin-ghost" onclick="changeSkin('ghost', 400)">400m</button>
             <button class="skin-btn" id="skin-lava" onclick="changeSkin('lava', 450)">450m</button>
             <button class="skin-btn" id="skin-rainbow" onclick="changeSkin('rainbow', 500)">500m</button>
+            <button class="skin-btn" id="skin-neon" onclick="changeSkin('neon', 600)">600m</button>
+            <button class="skin-btn" id="skin-diamond" onclick="changeSkin('diamond', 700)">700m</button>
+            <button class="skin-btn" id="skin-ruby" onclick="changeSkin('ruby', 800)">800m</button>
+            <button class="skin-btn" id="skin-emerald" onclick="changeSkin('emerald', 900)">900m</button>
+            <button class="skin-btn" id="skin-void" onclick="changeSkin('void', 1000)">1000m</button>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
