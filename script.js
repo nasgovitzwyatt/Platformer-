@@ -8,7 +8,7 @@ const skinMenuBtn = document.getElementById("skinMenuBtn");
 const settingsBtn = document.getElementById("settingsBtn");
 const backBtn = document.getElementById("backToMenu");
 
-// Settings Config with explicit Space handling
+// Settings Config
 let config = {
     Jump: localStorage.getItem("keyJump") || "Space",
     Left: localStorage.getItem("keyLeft") || "ArrowLeft",
@@ -43,7 +43,7 @@ backBtn.onclick = (e) => {
     mainMenu.style.display = "flex";
 };
 
-// Rebinding Logic with Space fix
+// --- REBINDING LOGIC (FIXED) ---
 let bindingAction = null;
 const bindButtons = {
     Jump: document.getElementById("bindJump"),
@@ -55,8 +55,14 @@ Object.keys(bindButtons).forEach(action => {
     bindButtons[action].innerText = config[action];
     bindButtons[action].onclick = (e) => {
         e.stopPropagation();
+        e.preventDefault();
+        
+        // Remove focus immediately so Space doesn't "re-click" the button
+        bindButtons[action].blur(); 
+        
+        if (bindingAction) return; // Prevent double-triggering
+
         bindingAction = action;
-        // Reset others
         Object.values(bindButtons).forEach(b => b.classList.remove("waiting"));
         bindButtons[action].innerText = "...";
         bindButtons[action].classList.add("waiting");
@@ -64,9 +70,11 @@ Object.keys(bindButtons).forEach(action => {
 });
 
 window.addEventListener("keydown", e => {
-    // REBINDING BLOCK
+    // 1. REBINDING CHECK
     if (bindingAction) {
-        e.preventDefault(); // CRITICAL: Stop Space from triggering "click"
+        e.preventDefault();
+        e.stopImmediatePropagation(); // Stops the event from bubbling to other listeners
+        
         let newKey = e.code;
         config[bindingAction] = newKey;
         localStorage.setItem("key" + bindingAction, newKey);
@@ -74,15 +82,12 @@ window.addEventListener("keydown", e => {
         bindButtons[bindingAction].innerText = newKey;
         bindButtons[bindingAction].classList.remove("waiting");
         
-        // Remove focus so the key doesn't trigger the button again
-        bindButtons[bindingAction].blur(); 
-        
         bindingAction = null;
-        return;
+        return false;
     }
     
-    // GAMEPLAY BLOCK
-    if (["Space", "ArrowUp", "ArrowLeft", "ArrowRight"].includes(e.code)) {
+    // 2. GAMEPLAY CONTROLS
+    if ([config.Jump, config.Left, config.Right, "ArrowUp", "Space"].includes(e.code)) {
         e.preventDefault();
     }
     
@@ -90,9 +95,10 @@ window.addEventListener("keydown", e => {
         player.velY = JUMP_FORCE; player.jumping = true;
     }
     keys[e.code] = true;
-});
+}, true); // Use capture phase (true) to catch the event before buttons do
 
 window.addEventListener("keyup", e => keys[e.code] = false);
+// ------------------------------
 
 function updateUI() {
     document.getElementById("highScoreBoard").innerText = `Best: ${highScore}m`;
@@ -249,37 +255,4 @@ function draw() {
         ctx.strokeStyle = "white"; ctx.strokeRect(player.x+5, player.y+5, 20, 20);
     } else if (playerColor === 'void') {
         ctx.fillStyle = "black"; ctx.fillRect(player.x, player.y, 30, 30);
-        ctx.fillStyle = "white"; ctx.fillRect(player.x + Math.random()*25, player.y + Math.random()*25, 2, 2);
-    } else ctx.fillStyle = playerColor;
-    
-    ctx.fillRect(player.x, player.y, 30, 30);
-    ctx.shadowBlur = 0; ctx.globalAlpha = 1.0;
-    ctx.restore();
-}
-
-function gameOver() {
-    gameActive = false;
-    if (maxHeight > highScore) {
-        highScore = maxHeight;
-        localStorage.setItem("parkourHigh", highScore);
-    }
-    document.getElementById("statusText").innerText = "YOU FELL!";
-    startBtn.innerText = "RETRY";
-    mainMenu.style.display = "flex";
-    updateUI();
-}
-
-const setupBtn = (id, action) => {
-    const btn = document.getElementById(id);
-    btn.addEventListener("touchstart", (e) => {
-        e.preventDefault();
-        if (action === "Jump") { if (!player.jumping) { player.velY = JUMP_FORCE; player.jumping = true; } }
-        else keys[config[action]] = true;
-    }, { passive: false });
-    btn.addEventListener("touchend", (e) => { e.preventDefault(); keys[config[action]] = false; }, { passive: false });
-};
-setupBtn("leftBtn", "Left");
-setupBtn("rightBtn", "Right");
-setupBtn("jumpBtn", "Jump");
-
-updateUI();
+        ctx.fillStyle = "white
