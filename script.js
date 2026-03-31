@@ -7,13 +7,12 @@ const skinsBtn = document.getElementById("skinsBtn");
 const skinsPanel = document.getElementById("skinsPanel");
 
 let gravity = 0.5, cameraY = 0, maxHeight = 0, gameActive = false;
-let highScore = localStorage.getItem("parkourHigh") || 0;
+let highScore = parseInt(localStorage.getItem("parkourHigh")) || 0;
 let playerColor = "#ff5722";
 let hue = 0;
 
 const JUMP_FORCE = -13.5;
 const BOUNCE_FORCE = -22;
-
 const player = { x:180, y:500, width:30, height:30, velX:0, velY:0, jumping:false, onIce:false };
 let platforms = [];
 const keys = {};
@@ -47,13 +46,15 @@ function updateUI(){
         const btn=document.getElementById(skin.id);
         if(highScore>=skin.unlock){
             btn.classList.remove("locked");
+            btn.innerText="SELECT";
             btn.onclick=()=>{ playerColor=skin.color; updateUI(); }
         } else {
             btn.classList.add("locked");
+            btn.innerText=skin.unlock+"m";
             btn.onclick=null;
         }
 
-        if(highScore>=skin.unlock && playerColor===skin.color) btn.classList.add("selected");
+        if(!btn.classList.contains("locked") && playerColor===skin.color) btn.classList.add("selected");
         else btn.classList.remove("selected");
     });
 }
@@ -170,7 +171,7 @@ function update(){
 }
 
 // ----------------------
-// DRAW
+// DRAW PLAYER AND PLATFORMS
 // ----------------------
 function draw(){
     ctx.clearRect(0,0,canvas.width,canvas.height);
@@ -185,11 +186,8 @@ function draw(){
         ctx.fillRect(p.x,p.y,p.width,p.height);
     });
 
-    if(skinsData.find(s=>s.color===playerColor && highScore>=s.unlock)){
-        // player draw code here...
-        ctx.fillStyle=playerColor==='striped'? '#fff': playerColor;
-        ctx.fillRect(player.x,player.y,30,30);
-    }
+    ctx.fillStyle=playerColor==='striped'?'#fff':playerColor;
+    ctx.fillRect(player.x,player.y,30,30);
 
     ctx.restore();
 }
