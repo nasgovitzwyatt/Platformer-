@@ -2,7 +2,8 @@ const canvas = document.getElementById("gameCanvas");
 const ctx = canvas.getContext("2d");
 
 const mainMenu = document.getElementById("mainMenu"), shopMenu = document.getElementById("shopMenu"),
-      settingsModal = document.getElementById("settingsModal"), skinMenu = document.getElementById("skinMenu");
+      settingsModal = document.getElementById("settingsModal"), skinMenu = document.getElementById("skinMenu"),
+      mobileControls = document.getElementById("mobileControls");
 
 let tokens = parseInt(localStorage.getItem("parkourTokens")) || 0;
 let highScore = parseInt(localStorage.getItem("parkourHigh")) || 0;
@@ -18,12 +19,12 @@ const player = { x: 180, y: 500, width: 30, height: 30, velX: 0, velY: 0, jumpin
 let platforms = [], items = [], keys = {};
 
 // Navigation
-document.getElementById("startBtn").onclick = () => init();
-document.getElementById("shopBtn").onclick = () => { mainMenu.style.display = "none"; shopMenu.style.display = "flex"; updateUI(); };
-document.getElementById("closeShop").onclick = () => { shopMenu.style.display = "none"; mainMenu.style.display = "flex"; };
-document.getElementById("skinMenuBtn").onclick = () => skinMenu.style.display = (skinMenu.style.display === "none" ? "block" : "none");
-document.getElementById("settingsBtn").onclick = () => { mainMenu.style.display = "none"; settingsModal.style.display = "flex"; };
-document.getElementById("backToMenu").onclick = () => { settingsModal.style.display = "none"; mainMenu.style.display = "flex"; };
+document.getElementById("startBtn").onclick = (e) => { e.stopPropagation(); init(); };
+document.getElementById("shopBtn").onclick = (e) => { e.stopPropagation(); mainMenu.style.display = "none"; shopMenu.style.display = "flex"; updateUI(); };
+document.getElementById("closeShop").onclick = (e) => { e.stopPropagation(); shopMenu.style.display = "none"; mainMenu.style.display = "flex"; };
+document.getElementById("skinMenuBtn").onclick = (e) => { e.stopPropagation(); skinMenu.style.display = (skinMenu.style.display === "none" ? "block" : "none"); };
+document.getElementById("settingsBtn").onclick = (e) => { e.stopPropagation(); mainMenu.style.display = "none"; settingsModal.style.display = "flex"; };
+document.getElementById("backToMenu").onclick = (e) => { e.stopPropagation(); settingsModal.style.display = "none"; mainMenu.style.display = "flex"; };
 
 function buyItem(type, name, price) {
     if (ownedItems.includes(name)) { if (type === 'bg') currentBGName = name; }
@@ -36,6 +37,7 @@ function updateUI() {
     document.getElementById("tokenBoard").innerText = `Tokens: ${tokens}`;
     document.getElementById("highScoreBoard").innerText = `Best: ${highScore}m`;
     
+    // Background UI
     ["White", "Blue", "Sunset", "Space"].forEach(bg => {
         const btn = document.getElementById(`btn-bg-${bg}`), priceSpan = document.getElementById(`price-${bg}`);
         if (btn) {
@@ -44,6 +46,7 @@ function updateUI() {
         }
     });
 
+    // Skin UI
     const skinData = [
         {id: "skin-orange", req: 0}, {id: "skin-blue", req: 50}, {id: "skin-green", req: 100}, {id: "skin-purple", req: 150},
         {id: "skin-gold", req: 200}, {id: "skin-mint", req: 250}, {id: "skin-lava", req: 300}, {id: "skin-camo", req: 350},
@@ -56,7 +59,7 @@ function updateUI() {
             if (highScore >= s.req) {
                 btn.classList.remove("locked"); btn.innerText = (selectedSkinId === s.id) ? "ACTIVE" : "SELECT";
                 btn.classList.toggle("selected", selectedSkinId === s.id);
-            } else { btn.classList.add("locked"); btn.innerText = s.req + "m"; }
+            } else { btn.classList.add("locked"); btn.innerText = "🔒 " + s.req + "m"; }
         }
     });
 }
@@ -69,7 +72,7 @@ let bindingAction = null;
 const bindButtons = { Jump: "bindJump", Left: "bindLeft", Right: "bindRight" };
 Object.keys(bindButtons).forEach(action => {
     const btn = document.getElementById(bindButtons[action]);
-    btn.onclick = () => { bindingAction = action; btn.innerText = "..."; btn.classList.add("waiting"); };
+    btn.onclick = (e) => { e.stopPropagation(); bindingAction = action; btn.innerText = "..."; btn.classList.add("waiting"); };
 });
 
 window.addEventListener("keydown", e => {
@@ -88,6 +91,10 @@ function init() {
     player.x = 180; player.y = 500; player.velX = 0; player.velY = 0; cameraY = 0; maxHeight = 0;
     platforms = [{ x: 0, y: 580, width: 400, height: 20, type: 'normal' }]; items = [];
     generatePlatforms(); gameActive = true;
+    
+    // Deactivate mobile buttons while in menu
+    mobileControls.style.pointerEvents = "none";
+    
     mainMenu.style.display = "none"; shopMenu.style.display = "none"; settingsModal.style.display = "none";
     updateUI(); update();
 }
@@ -96,14 +103,10 @@ function generatePlatforms() {
     let lastY = platforms[platforms.length - 1].y;
     for (let i = 0; i < 500; i++) {
         let heightM = (500 - lastY) / 10;
-        // Difficulty increase: gaps get larger, platforms get narrower
         let gapModifier = Math.min(60, heightM / 15);
         lastY -= (90 + gapModifier + Math.random() * 40);
-        
         let type = 'normal', roll = Math.random();
-        // As height increases, normal platforms become rare
         let normalChance = Math.max(0.1, 0.6 - (heightM / 1000));
-        
         if (roll > normalChance) {
             let subRoll = Math.random();
             if (subRoll < 0.25) type = 'tramp'; 
@@ -111,46 +114,31 @@ function generatePlatforms() {
             else if (subRoll < 0.75) type = 'crumble'; 
             else type = 'ice';
         }
-
-        // Tramp and Crumble move. Conveyors stay still.
         let moveSpeed = (type === 'tramp' || type === 'crumble' || (type === 'normal' && Math.random() < 0.3)) ? (1.5 + (heightM/500)) : 0;
-        
-        platforms.push({ 
-            x: Math.random() * 300, y: lastY, 
-            width: Math.max(40, 80 - (heightM / 25)), 
-            height: 12, type: type, speed: moveSpeed, 
-            beltDir: 1.5, crackTimer: 1.0, isCracking: false
-        });
+        platforms.push({ x: Math.random() * 300, y: lastY, width: Math.max(40, 80 - (heightM / 25)), height: 12, type: type, speed: moveSpeed, beltDir: 1.5, crackTimer: 1.0, isCracking: false });
         if (Math.random() < 0.3) items.push({ x: platforms[platforms.length-1].x + 35, y: lastY - 25, collected: false });
     }
 }
 
 function update() {
     if (!gameActive) return;
+    mobileControls.style.pointerEvents = "auto"; // Reactivate buttons when game starts
+    
     if (keys[config.Left] || keys["ArrowLeft"]) player.velX -= player.onIce ? 0.3 : 1; 
     if (keys[config.Right] || keys["ArrowRight"]) player.velX += player.onIce ? 0.3 : 1;
-    
-    player.velX *= player.onIce ? 0.98 : 0.8; 
-    player.velX += player.conveyorForce; player.velY += gravity; player.x += player.velX; player.y += player.velY;
-    
+    player.velX *= player.onIce ? 0.98 : 0.8; player.velX += player.conveyorForce; player.velY += gravity; player.x += player.velX; player.y += player.velY;
     if (player.x < -30) player.x = canvas.width; if (player.x > canvas.width) player.x = -30;
     player.conveyorForce = 0; player.onIce = false;
 
     platforms.forEach(plat => {
         if (player.velY > 0 && player.y + 30 > plat.y && player.y + 30 < plat.y + 15 + player.velY && player.x + 30 > plat.x && player.x < plat.x + plat.width) {
             if (plat.type === 'tramp') { player.velY = BOUNCE_FORCE; player.jumping = true; }
-            else { 
-                player.velY = 0; player.y = plat.y - 30; player.jumping = false; 
-                if (plat.type === 'conveyor') player.conveyorForce = plat.beltDir;
-                if (plat.type === 'ice') player.onIce = true;
-                if (plat.type === 'crumble') plat.isCracking = true;
-            }
+            else { player.velY = 0; player.y = plat.y - 30; player.jumping = false; if (plat.type === 'conveyor') player.conveyorForce = plat.beltDir; if (plat.type === 'ice') player.onIce = true; if (plat.type === 'crumble') plat.isCracking = true; }
         }
         if (plat.isCracking) plat.crackTimer -= 0.02;
         if (plat.speed) { plat.x += plat.speed; if (plat.x < 0 || plat.x > 320) plat.speed *= -1; }
     });
     platforms = platforms.filter(p => p.type !== 'crumble' || p.crackTimer > 0);
-
     items.forEach(item => { if (!item.collected && Math.abs(player.x - item.x) < 30 && Math.abs(player.y - item.y) < 30) { item.collected = true; tokens++; updateUI(); } });
     if (player.y < cameraY + 300) cameraY = player.y - 300;
     let h = Math.max(0, Math.floor((500 - player.y) / 10));
@@ -166,30 +154,24 @@ function draw() {
     else if (currentBGName === "Sunset") { grad.addColorStop(0, "#ff8c00"); grad.addColorStop(1, "#ff0080"); }
     else if (currentBGName === "Space") { grad.addColorStop(0, "#0f0c29"); grad.addColorStop(1, "#24243e"); }
     ctx.fillStyle = grad; ctx.fillRect(0, 0, canvas.width, canvas.height);
-    
     ctx.save(); ctx.translate(0, -cameraY);
     platforms.forEach(p => {
-        if (p.type === 'tramp') ctx.fillStyle = "#e91e63";
-        else if (p.type === 'conveyor') ctx.fillStyle = "#757575";
-        else if (p.type === 'ice') ctx.fillStyle = "#80deea";
-        else if (p.type === 'crumble') ctx.fillStyle = `rgb(${255 * (1-p.crackTimer)}, ${150 * p.crackTimer}, 50)`;
-        else ctx.fillStyle = "#455a64";
+        if (p.type === 'tramp') ctx.fillStyle = "#e91e63"; else if (p.type === 'conveyor') ctx.fillStyle = "#757575"; else if (p.type === 'ice') ctx.fillStyle = "#80deea"; else if (p.type === 'crumble') ctx.fillStyle = `rgb(${255 * (1-p.crackTimer)}, ${150 * p.crackTimer}, 50)`; else ctx.fillStyle = "#455a64";
         ctx.fillRect(p.x, p.y, p.width, p.height);
     });
     items.forEach(item => { if (!item.collected) { ctx.fillStyle = "#ffeb3b"; ctx.beginPath(); ctx.arc(item.x+5, item.y+5, 8, 0, Math.PI*2); ctx.fill(); } });
-    
-    if (playerColor === 'rainbow') ctx.fillStyle = `hsl(${(Date.now() / 10) % 360}, 100%, 50%)`;
-    else if (playerColor === 'lava') { ctx.fillStyle = "#d84315"; ctx.shadowBlur = 10; ctx.shadowColor = "#ffeb3b"; }
-    else if (playerColor === 'electric') { ctx.fillStyle = "#00d2ff"; ctx.shadowBlur = 15; ctx.shadowColor = "#fff"; }
-    else if (playerColor === 'ghost') { ctx.globalAlpha = 0.4; ctx.fillStyle = "white"; }
-    else if (playerColor === 'neon') { ctx.fillStyle = "#39ff14"; ctx.shadowBlur = 15; ctx.shadowColor = "#39ff14"; }
-    else { ctx.fillStyle = playerColor; }
-    
+    if (playerColor === 'rainbow') ctx.fillStyle = `hsl(${(Date.now() / 10) % 360}, 100%, 50%)`; else if (playerColor === 'lava') { ctx.fillStyle = "#d84315"; ctx.shadowBlur = 10; ctx.shadowColor = "#ffeb3b"; } else if (playerColor === 'electric') { ctx.fillStyle = "#00d2ff"; ctx.shadowBlur = 15; ctx.shadowColor = "#fff"; } else if (playerColor === 'ghost') { ctx.globalAlpha = 0.4; ctx.fillStyle = "white"; } else if (playerColor === 'neon') { ctx.fillStyle = "#39ff14"; ctx.shadowBlur = 15; ctx.shadowColor = "#39ff14"; } else { ctx.fillStyle = playerColor; }
     ctx.fillRect(player.x, player.y, 30, 30);
     ctx.shadowBlur = 0; ctx.globalAlpha = 1.0; ctx.restore();
 }
 
-function gameOver() { gameActive = false; mainMenu.style.display = "flex"; updateUI(); }
+function gameOver() { 
+    gameActive = false; 
+    mainMenu.style.display = "flex"; 
+    mobileControls.style.pointerEvents = "none";
+    updateUI(); 
+}
+
 const setupBtn = (id, act) => {
     const btn = document.getElementById(id);
     btn.ontouchstart = (e) => { e.preventDefault(); if (act === "Jump") { if (!player.jumping && gameActive) { player.velY = JUMP_FORCE; player.jumping = true; } } else keys[config[act]] = true; };
