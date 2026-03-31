@@ -36,38 +36,30 @@ const skinsData = [
     {id:"skin-void", color:"void", unlock:1000}
 ];
 
-// ----------------------
-// UI / SKINS
-// ----------------------
+// ---------------- UI ----------------
 function updateUI(){
     document.getElementById("highScoreBoard").innerText=`Best: ${highScore}m`;
-
     skinsData.forEach(skin=>{
-        const btn=document.getElementById(skin.id);
-        if(highScore>=skin.unlock){
+        const btn = document.getElementById(skin.id);
+        if(highScore >= skin.unlock){
             btn.classList.remove("locked");
             btn.innerText="SELECT";
-            btn.onclick=()=>{ playerColor=skin.color; updateUI(); }
+            btn.onclick=()=>{ playerColor=skin.color; updateUI(); };
         } else {
             btn.classList.add("locked");
             btn.innerText=skin.unlock+"m";
             btn.onclick=null;
         }
-
         if(!btn.classList.contains("locked") && playerColor===skin.color) btn.classList.add("selected");
         else btn.classList.remove("selected");
     });
 }
 
-// ----------------------
-// MENU BUTTONS
-// ----------------------
+// ---------------- MENU ----------------
 playBtn.onclick=()=>{ init(); }
 skinsBtn.onclick=()=>{ skinsPanel.classList.toggle("hidden"); }
 
-// ----------------------
-// INIT GAME
-// ----------------------
+// ---------------- INIT ----------------
 function init(){
     player.x=180; player.y=500; player.velX=0; player.velY=0;
     cameraY=0; maxHeight=0;
@@ -81,9 +73,7 @@ function init(){
     update();
 }
 
-// ----------------------
-// GENERATE PLATFORMS
-// ----------------------
+// ---------------- PLATFORM GENERATION ----------------
 function generatePlatforms(){
     let lastY=platforms[platforms.length-1].y;
     while(platforms.length<500){
@@ -113,9 +103,7 @@ function generatePlatforms(){
     }
 }
 
-// ----------------------
-// GAME LOOP
-// ----------------------
+// ---------------- GAME LOOP ----------------
 function update(){
     if(!gameActive) return;
 
@@ -170,9 +158,7 @@ function update(){
     requestAnimationFrame(update);
 }
 
-// ----------------------
-// DRAW PLAYER AND PLATFORMS
-// ----------------------
+// ---------------- DRAW ----------------
 function draw(){
     ctx.clearRect(0,0,canvas.width,canvas.height);
     ctx.save();
@@ -192,9 +178,7 @@ function draw(){
     ctx.restore();
 }
 
-// ----------------------
-// GAME OVER
-// ----------------------
+// ---------------- GAME OVER ----------------
 function gameOver(){
     gameActive=false;
     canvas.style.pointerEvents="none";
@@ -207,9 +191,7 @@ function gameOver(){
     updateUI();
 }
 
-// ----------------------
-// CONTROLS
-// ----------------------
+// ---------------- CONTROLS ----------------
 window.addEventListener("keydown", e=>{
     if(["ArrowUp","Space"].includes(e.code) && !player.jumping){ player.velY=JUMP_FORCE; player.jumping=true; }
     keys[e.code]=true;
