@@ -8,6 +8,7 @@
 </head>
 <body>
     <div id="ui">
+        <div id="tokenBoard">Tokens: 0</div>
         <div id="scoreBoard">Height: 0m</div>
         <div id="highScoreBoard">Best: 0m</div>
     </div>
@@ -24,26 +25,34 @@
         <h1 id="statusText">CUBE PARKOUR</h1>
         <div class="menu-buttons">
             <button id="startBtn" class="menu-btn primary">START GAME</button>
+            <button id="shopBtn" class="menu-btn" style="background: #ffc107; color: black;">SHOP</button>
             <button id="skinMenuBtn" class="menu-btn">SKINS</button>
             <button id="settingsBtn" class="menu-btn">SETTINGS</button>
         </div>
     </div>
 
+    <div id="shopMenu" class="menu-screen" style="display: none;">
+        <h2>CITY SHOP</h2>
+        <div class="shop-container">
+            <div class="shop-section">
+                <h3>Backgrounds</h3>
+                <button class="shop-item" onclick="buyItem('bg', 'Space', 50)">Space (50 T)</button>
+                <button class="shop-item" onclick="buyItem('bg', 'Sunset', 30)">Sunset (30 T)</button>
+            </div>
+            <div class="shop-section">
+                <h3>Powerups</h3>
+                <button class="shop-item" onclick="buyItem('pow', 'DoubleJump', 100)">Extra Jump (100 T)</button>
+                <button class="shop-item" onclick="buyItem('pow', 'Shield', 75)">Shield (75 T)</button>
+            </div>
+        </div>
+        <button id="closeShop" class="menu-btn" style="margin-top:20px;">BACK</button>
+    </div>
+
     <div id="settingsModal" class="menu-screen" style="display: none;">
         <h2>SETTINGS</h2>
-        <p style="font-size: 10px; margin-bottom: 20px;">Click a button then press a key</p>
-        <div class="setting-item">
-            <span>Jump:</span>
-            <button id="bindJump" class="bind-btn">Space</button>
-        </div>
-        <div class="setting-item">
-            <span>Left:</span>
-            <button id="bindLeft" class="bind-btn">ArrowLeft</button>
-        </div>
-        <div class="setting-item">
-            <span>Right:</span>
-            <button id="bindRight" class="bind-btn">ArrowRight</button>
-        </div>
+        <div class="setting-item"><span>Jump:</span><button id="bindJump" class="bind-btn">Space</button></div>
+        <div class="setting-item"><span>Left:</span><button id="bindLeft" class="bind-btn">Left</button></div>
+        <div class="setting-item"><span>Right:</span><button id="bindRight" class="bind-btn">Right</button></div>
         <button id="backToMenu" class="menu-btn" style="margin-top:20px;">BACK</button>
     </div>
 
@@ -55,16 +64,7 @@
             <button class="skin-btn" id="skin-green" onclick="changeSkin('#4caf50', 100)">100m</button>
             <button class="skin-btn" id="skin-purple" onclick="changeSkin('#9c27b0', 150)">150m</button>
             <button class="skin-btn" id="skin-gold" onclick="changeSkin('#ffcc00', 200)">200m</button>
-            <button class="skin-btn" id="skin-mint" onclick="changeSkin('#1de9b6', 250)">250m</button>
-            <button class="skin-btn" id="skin-striped" onclick="changeSkin('striped', 300)">300m</button>
-            <button class="skin-btn" id="skin-camo" onclick="changeSkin('camo', 350)">350m</button>
-            <button class="skin-btn" id="skin-ghost" onclick="changeSkin('ghost', 400)">400m</button>
-            <button class="skin-btn" id="skin-lava" onclick="changeSkin('lava', 450)">450m</button>
             <button class="skin-btn" id="skin-rainbow" onclick="changeSkin('rainbow', 500)">500m</button>
-            <button class="skin-btn" id="skin-neon" onclick="changeSkin('neon', 600)">600m</button>
-            <button class="skin-btn" id="skin-diamond" onclick="changeSkin('diamond', 700)">700m</button>
-            <button class="skin-btn" id="skin-ruby" onclick="changeSkin('ruby', 800)">800m</button>
-            <button class="skin-btn" id="skin-emerald" onclick="changeSkin('emerald', 900)">900m</button>
             <button class="skin-btn" id="skin-void" onclick="changeSkin('void', 1000)">1000m</button>
         </div>
     </div>
