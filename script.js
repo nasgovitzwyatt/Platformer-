@@ -8,7 +8,7 @@ const skinMenuBtn = document.getElementById("skinMenuBtn");
 const settingsBtn = document.getElementById("settingsBtn");
 const backBtn = document.getElementById("backToMenu");
 
-// Settings Config
+// Settings Config with explicit Space handling
 let config = {
     Jump: localStorage.getItem("keyJump") || "Space",
     Left: localStorage.getItem("keyLeft") || "ArrowLeft",
@@ -26,7 +26,7 @@ const player = { x: 180, y: 500, width: 30, height: 30, velX: 0, velY: 0, jumpin
 let platforms = [];
 const keys = {};
 
-// Navigation & Clicks
+// Navigation
 startBtn.onclick = (e) => { e.stopPropagation(); init(); };
 skinMenuBtn.onclick = (e) => { 
     e.stopPropagation();
@@ -43,8 +43,8 @@ backBtn.onclick = (e) => {
     mainMenu.style.display = "flex";
 };
 
-// Rebinding Logic
-let bindingKey = null;
+// Rebinding Logic with Space fix
+let bindingAction = null;
 const bindButtons = {
     Jump: document.getElementById("bindJump"),
     Left: document.getElementById("bindLeft"),
@@ -53,25 +53,38 @@ const bindButtons = {
 
 Object.keys(bindButtons).forEach(action => {
     bindButtons[action].innerText = config[action];
-    bindButtons[action].onclick = () => {
-        bindingKey = action;
+    bindButtons[action].onclick = (e) => {
+        e.stopPropagation();
+        bindingAction = action;
+        // Reset others
+        Object.values(bindButtons).forEach(b => b.classList.remove("waiting"));
         bindButtons[action].innerText = "...";
         bindButtons[action].classList.add("waiting");
     };
 });
 
 window.addEventListener("keydown", e => {
-    if (bindingKey) {
-        config[bindingKey] = e.code;
-        localStorage.setItem("key" + bindingKey, e.code);
-        bindButtons[bindingKey].innerText = e.code;
-        bindButtons[bindingKey].classList.remove("waiting");
-        bindingKey = null;
+    // REBINDING BLOCK
+    if (bindingAction) {
+        e.preventDefault(); // CRITICAL: Stop Space from triggering "click"
+        let newKey = e.code;
+        config[bindingAction] = newKey;
+        localStorage.setItem("key" + bindingAction, newKey);
+        
+        bindButtons[bindingAction].innerText = newKey;
+        bindButtons[bindingAction].classList.remove("waiting");
+        
+        // Remove focus so the key doesn't trigger the button again
+        bindButtons[bindingAction].blur(); 
+        
+        bindingAction = null;
         return;
     }
     
-    // Prevent scrolling
-    if ([config.Jump, config.Left, config.Right, "ArrowUp"].includes(e.code)) e.preventDefault();
+    // GAMEPLAY BLOCK
+    if (["Space", "ArrowUp", "ArrowLeft", "ArrowRight"].includes(e.code)) {
+        e.preventDefault();
+    }
     
     if ((e.code === config.Jump || e.code === "ArrowUp") && !player.jumping && gameActive) {
         player.velY = JUMP_FORCE; player.jumping = true;
@@ -215,7 +228,6 @@ function draw() {
         ctx.fillRect(p.x, p.y, p.width, p.height);
     });
     
-    // Player Drawing Logic (Stripped, Rainbow, etc.) stays exactly as your original...
     if (playerColor === 'rainbow') ctx.fillStyle = `hsl(${hue}, 100%, 50%)`;
     else if (playerColor === 'striped') {
         let grad = ctx.createLinearGradient(player.x, player.y, player.x+30, player.y+30);
@@ -257,7 +269,6 @@ function gameOver() {
     updateUI();
 }
 
-// Mobile Buttons
 const setupBtn = (id, action) => {
     const btn = document.getElementById(id);
     btn.addEventListener("touchstart", (e) => {
