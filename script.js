@@ -9,7 +9,7 @@ const settingsModal = document.getElementById("settingsModal");
 const skinMenu = document.getElementById("skinMenu");
 const skinMenuBtn = document.getElementById("skinMenuBtn");
 
-// Game State & Persistence
+// Game State
 let tokens = parseInt(localStorage.getItem("parkourTokens")) || 0;
 let highScore = localStorage.getItem("parkourHigh") || 0;
 let config = {
@@ -19,43 +19,42 @@ let config = {
 };
 
 let gravity = 0.5, cameraY = 0, maxHeight = 0, gameActive = false;
-let playerColor = "#ff5722", currentBG = "#87CEEB";
-let hue = 0, windForce = 0; 
+let playerColor = "#ff5722";
+let currentBG = localStorage.getItem("selectedBG") || "#ffffff"; 
+let hue = 0; 
 
 const JUMP_FORCE = -13.5; 
 const BOUNCE_FORCE = -22; 
 const player = { x: 180, y: 500, width: 30, height: 30, velX: 0, velY: 0, jumping: false, onIce: false, conveyorForce: 0 };
 let platforms = [];
-let items = []; // For tokens
+let items = []; 
 const keys = {};
 
-// --- GUI NAVIGATION ---
+// Navigation
 startBtn.onclick = () => init();
 shopBtn.onclick = () => { mainMenu.style.display = "none"; shopMenu.style.display = "flex"; };
 closeShop.onclick = () => { shopMenu.style.display = "none"; mainMenu.style.display = "flex"; };
-skinMenuBtn.onclick = () => { skinMenu.style.display = skinMenu.style.display === "none" ? "block" : "none"; };
+skinMenuBtn.onclick = () => skinMenu.style.display = skinMenu.style.display === "none" ? "block" : "none";
 document.getElementById("settingsBtn").onclick = () => { mainMenu.style.display = "none"; settingsModal.style.display = "flex"; };
 document.getElementById("backToMenu").onclick = () => { settingsModal.style.display = "none"; mainMenu.style.display = "flex"; };
 
-// --- SHOP LOGIC ---
 function buyItem(type, name, price) {
     if (tokens >= price) {
-        tokens -= price;
-        localStorage.setItem("parkourTokens", tokens);
-        updateUI();
+        if (price > 0) {
+            tokens -= price;
+            localStorage.setItem("parkourTokens", tokens);
+        }
         if (type === 'bg') {
+            if (name === 'White') currentBG = "#ffffff";
             if (name === 'Space') currentBG = "#0b0d17";
             if (name === 'Sunset') currentBG = "#fd5e53";
-            alert("Background Changed!");
-        } else {
-            alert("Powerup purchased! (Logic coming soon)");
+            localStorage.setItem("selectedBG", currentBG);
+            alert(`Equipped ${name}!`);
         }
-    } else {
-        alert("Not enough tokens!");
-    }
+        updateUI();
+    } else { alert("Not enough tokens!"); }
 }
 
-// --- REBINDING & INPUT ---
 let bindingAction = null;
 const bindButtons = { Jump: document.getElementById("bindJump"), Left: document.getElementById("bindLeft"), Right: document.getElementById("bindRight") };
 Object.keys(bindButtons).forEach(action => {
@@ -86,11 +85,18 @@ window.addEventListener("keydown", e => {
 });
 window.addEventListener("keyup", e => keys[e.code] = false);
 
-// --- GAME LOGIC ---
 function updateUI() {
     document.getElementById("highScoreBoard").innerText = `Best: ${highScore}m`;
     document.getElementById("tokenBoard").innerText = `Tokens: ${tokens}`;
-    // Skin unlocking logic...
+    const unlocks = [0, 50, 100, 150, 200, 500, 1000];
+    const ids = ["skin-orange", "skin-blue", "skin-green", "skin-purple", "skin-gold", "skin-rainbow", "skin-void"];
+    ids.forEach((id, i) => {
+        const btn = document.getElementById(id);
+        if (btn) {
+            if (highScore >= unlocks[i]) { btn.classList.remove("locked"); btn.innerText = "SELECT"; }
+            else { btn.classList.add("locked"); btn.innerText = unlocks[i] + "m"; }
+        }
+    });
 }
 
 function changeSkin(color, req) { if (highScore >= req) { playerColor = color; skinMenu.style.display = "none"; } }
@@ -114,26 +120,19 @@ function generatePlatforms() {
         lastY -= (90 + gap) + Math.random() * 40; 
         let h = (500 - lastY) / 10;
         let type = 'normal', roll = Math.random();
-        
         if (h > 40) {
             if (roll < 0.10) type = 'tramp'; 
             else if (roll < 0.20) type = 'crumble'; 
             else if (roll < 0.30) type = 'conveyor';
             else if (h > 140 && roll < 0.40) type = 'ice';
         }
-
         let plat = {
-            x: Math.random() * 320, y: lastY,
-            width: Math.max(40, 80 - (h / 35)), 
+            x: Math.random() * 320, y: lastY, width: Math.max(40, 80 - (h / 35)), 
             height: 12, type: type, speed: (h > 100 && Math.random() < 0.4) ? 2 : 0, 
             crackTimer: 2500, isCracking: false, beltDir: Math.random() > 0.5 ? 1.5 : -1.5
         };
         platforms.push(plat);
-
-        // Spawn Tokens on some platforms
-        if (Math.random() < 0.3) {
-            items.push({ x: plat.x + plat.width/2 - 5, y: plat.y - 25, collected: false });
-        }
+        if (Math.random() < 0.3) items.push({ x: plat.x + plat.width/2 - 5, y: plat.y - 25, collected: false });
     }
 }
 
@@ -141,21 +140,12 @@ function update() {
     if (!gameActive) return;
     let friction = player.onIce ? 0.98 : 0.8;
     let accel = player.onIce ? 0.3 : 1;
-
     if (keys[config.Right]) player.velX += accel;
     else if (keys[config.Left]) player.velX -= accel;
-    
-    player.velX *= friction;
-    player.velX += player.conveyorForce;
-    player.velY += gravity;
-    player.x += player.velX; player.y += player.velY;
-
-    if (player.x < -30) player.x = canvas.width;
-    if (player.x > canvas.width) player.x = -30;
-
+    player.velX *= friction; player.velX += player.conveyorForce;
+    player.velY += gravity; player.x += player.velX; player.y += player.velY;
+    if (player.x < -30) player.x = canvas.width; if (player.x > canvas.width) player.x = -30;
     player.onIce = false; player.conveyorForce = 0;
-
-    // Platform Logic
     platforms.forEach(plat => {
         if (player.velY > 0 && player.y + 30 > plat.y && player.y + 30 < plat.y + 15 + player.velY &&
             player.x + 30 > plat.x && player.x < plat.x + plat.width) {
@@ -166,23 +156,13 @@ function update() {
                 if (plat.type === 'conveyor') player.conveyorForce = plat.beltDir;
             }
         }
-        if (plat.speed !== 0) {
-            plat.x += plat.speed;
-            if (plat.x < 0 || plat.x + plat.width > canvas.width) plat.speed *= -1;
-        }
+        if (plat.speed !== 0) { plat.x += plat.speed; if (plat.x < 0 || plat.x + plat.width > canvas.width) plat.speed *= -1; }
     });
-
-    // Token Collection Logic
     items.forEach(item => {
-        if (!item.collected && player.x < item.x + 15 && player.x + 30 > item.x && 
-            player.y < item.y + 15 && player.y + 30 > item.y) {
-            item.collected = true;
-            tokens++;
-            localStorage.setItem("parkourTokens", tokens);
-            document.getElementById("tokenBoard").innerText = `Tokens: ${tokens}`;
+        if (!item.collected && player.x < item.x + 15 && player.x + 30 > item.x && player.y < item.y + 15 && player.y + 30 > item.y) {
+            item.collected = true; tokens++; localStorage.setItem("parkourTokens", tokens);
         }
     });
-
     if (player.y < canvas.height/2 + cameraY) cameraY = player.y - canvas.height/2;
     let h = Math.max(0, Math.floor((500 - player.y) / 10));
     if (h > maxHeight) { maxHeight = h; document.getElementById("scoreBoard").innerText = `Height: ${maxHeight}m`; }
@@ -191,53 +171,27 @@ function update() {
 }
 
 function draw() {
-    ctx.fillStyle = currentBG;
-    ctx.fillRect(0,0, canvas.width, canvas.height);
+    ctx.fillStyle = currentBG; ctx.fillRect(0,0, canvas.width, canvas.height);
     ctx.save(); ctx.translate(0, -cameraY);
-    
     platforms.forEach(p => {
-        if (p.type === 'ice') ctx.fillStyle = "#80deea";
-        else if (p.type === 'tramp') ctx.fillStyle = "#e91e63";
-        else if (p.type === 'conveyor') ctx.fillStyle = "#757575";
-        else ctx.fillStyle = "#455a64";
+        if (p.type === 'ice') ctx.fillStyle = "#80deea"; else if (p.type === 'tramp') ctx.fillStyle = "#e91e63";
+        else if (p.type === 'conveyor') ctx.fillStyle = "#757575"; else ctx.fillStyle = "#455a64";
         ctx.fillRect(p.x, p.y, p.width, p.height);
     });
-
-    // Draw Tokens
-    items.forEach(item => {
-        if (!item.collected) {
-            ctx.fillStyle = "#ffeb3b";
-            ctx.beginPath();
-            ctx.arc(item.x + 5, item.y + 5, 6, 0, Math.PI*2);
-            ctx.fill();
-            ctx.strokeStyle = "#fbc02d";
-            ctx.stroke();
-        }
-    });
-
-    // Player drawing (Keep original skin logic here)
+    items.forEach(item => { if (!item.collected) { ctx.fillStyle = "#ffeb3b"; ctx.beginPath(); ctx.arc(item.x+5, item.y+5, 6, 0, Math.PI*2); ctx.fill(); } });
     ctx.fillStyle = playerColor === 'rainbow' ? `hsl(${hue}, 100%, 50%)` : playerColor;
     ctx.fillRect(player.x, player.y, 30, 30);
     ctx.restore();
 }
 
-function gameOver() {
-    gameActive = false;
-    if (maxHeight > highScore) { highScore = maxHeight; localStorage.setItem("parkourHigh", highScore); }
-    mainMenu.style.display = "flex";
-    updateUI();
-}
-
-// Mobile Handlers...
+function gameOver() { gameActive = false; mainMenu.style.display = "flex"; updateUI(); }
 const setupBtn = (id, action) => {
     const btn = document.getElementById(id);
     btn.addEventListener("touchstart", (e) => {
-        e.preventDefault();
-        if (action === "Jump") { if (!player.jumping && gameActive) { player.velY = JUMP_FORCE; player.jumping = true; } }
+        e.preventDefault(); if (action === "Jump") { if (!player.jumping && gameActive) { player.velY = JUMP_FORCE; player.jumping = true; } }
         else keys[config[action]] = true;
-    }, { passive: false });
-    btn.addEventListener("touchend", (e) => { e.preventDefault(); keys[config[action]] = false; }, { passive: false });
+    });
+    btn.addEventListener("touchend", (e) => { e.preventDefault(); keys[config[action]] = false; });
 };
 setupBtn("leftBtn", "Left"); setupBtn("rightBtn", "Right"); setupBtn("jumpBtn", "Jump");
-
 updateUI();
