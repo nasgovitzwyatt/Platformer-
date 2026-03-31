@@ -54,9 +54,10 @@ function updateUI() {
         const btn = document.getElementById(s.id);
         if (btn) {
             if (highScore >= s.req) {
-                btn.classList.remove("locked"); btn.innerText = (selectedSkinId === s.id) ? "ACTIVE" : "SELECT";
+                btn.classList.remove("locked");
+                btn.innerText = (selectedSkinId === s.id) ? "ACTIVE" : "SELECT";
                 btn.classList.toggle("selected", selectedSkinId === s.id);
-            } else { btn.classList.add("locked"); btn.innerText = "🔒 " + s.req + "m"; }
+            } else { btn.classList.add("locked"); btn.innerText = s.req + "m"; }
         }
     });
 }
@@ -97,25 +98,49 @@ function generatePlatforms() {
     for (let i = 0; i < 500; i++) {
         lastY -= (90 + Math.random() * 40);
         let type = 'normal', roll = Math.random();
-        if (roll < 0.1) type = 'tramp'; else if (roll < 0.2) type = 'conveyor'; else if (roll < 0.3) type = 'crumble';
-        platforms.push({ x: Math.random() * 300, y: lastY, width: 80, height: 12, type: type, speed: (Math.random() < 0.2 ? 2 : 0), beltDir: 1.5 });
+        if (roll < 0.1) type = 'tramp'; 
+        else if (roll < 0.2) type = 'conveyor'; 
+        else if (roll < 0.3) type = 'crumble'; 
+        else if (roll < 0.4) type = 'ice';
+
+        // Rules: Conveyors NEVER move. Tramps can move.
+        let moveSpeed = (type !== 'conveyor' && Math.random() < 0.2) ? 2 : 0;
+        
+        platforms.push({ 
+            x: Math.random() * 300, y: lastY, width: 80, height: 12, 
+            type: type, speed: moveSpeed, beltDir: 1.5,
+            crackTimer: 1.0, isCracking: false
+        });
         if (Math.random() < 0.3) items.push({ x: platforms[platforms.length-1].x + 35, y: lastY - 25, collected: false });
     }
 }
 
 function update() {
     if (!gameActive) return;
-    if (keys[config.Left] || keys["ArrowLeft"]) player.velX -= 1; if (keys[config.Right] || keys["ArrowRight"]) player.velX += 1;
-    player.velX *= 0.8; player.velX += player.conveyorForce; player.velY += gravity; player.x += player.velX; player.y += player.velY;
+    if (keys[config.Left] || keys["ArrowLeft"]) player.velX -= player.onIce ? 0.3 : 1; 
+    if (keys[config.Right] || keys["ArrowRight"]) player.velX += player.onIce ? 0.3 : 1;
+    
+    player.velX *= player.onIce ? 0.98 : 0.8; 
+    player.velX += player.conveyorForce; player.velY += gravity; player.x += player.velX; player.y += player.velY;
+    
     if (player.x < -30) player.x = canvas.width; if (player.x > canvas.width) player.x = -30;
-    player.conveyorForce = 0;
+    player.conveyorForce = 0; player.onIce = false;
+
     platforms.forEach(plat => {
         if (player.velY > 0 && player.y + 30 > plat.y && player.y + 30 < plat.y + 15 + player.velY && player.x + 30 > plat.x && player.x < plat.x + plat.width) {
             if (plat.type === 'tramp') { player.velY = BOUNCE_FORCE; player.jumping = true; }
-            else { player.velY = 0; player.y = plat.y - 30; player.jumping = false; if (plat.type === 'conveyor') player.conveyorForce = plat.beltDir; }
+            else { 
+                player.velY = 0; player.y = plat.y - 30; player.jumping = false; 
+                if (plat.type === 'conveyor') player.conveyorForce = plat.beltDir;
+                if (plat.type === 'ice') player.onIce = true;
+                if (plat.type === 'crumble') plat.isCracking = true;
+            }
         }
+        if (plat.isCracking) plat.crackTimer -= 0.02;
         if (plat.speed) { plat.x += plat.speed; if (plat.x < 0 || plat.x > 320) plat.speed *= -1; }
     });
+    platforms = platforms.filter(p => p.type !== 'crumble' || p.crackTimer > 0);
+
     items.forEach(item => { if (!item.collected && Math.abs(player.x - item.x) < 30 && Math.abs(player.y - item.y) < 30) { item.collected = true; tokens++; updateUI(); } });
     if (player.y < cameraY + 300) cameraY = player.y - 300;
     let h = Math.max(0, Math.floor((500 - player.y) / 10));
@@ -131,16 +156,20 @@ function draw() {
     else if (currentBGName === "Sunset") { grad.addColorStop(0, "#ff8c00"); grad.addColorStop(1, "#ff0080"); }
     else if (currentBGName === "Space") { grad.addColorStop(0, "#0f0c29"); grad.addColorStop(1, "#24243e"); }
     ctx.fillStyle = grad; ctx.fillRect(0, 0, canvas.width, canvas.height);
+    
     ctx.save(); ctx.translate(0, -cameraY);
     platforms.forEach(p => {
-        ctx.fillStyle = p.type === 'tramp' ? "#e91e63" : (p.type === 'conveyor' ? "#757575" : (p.type === 'crumble' ? "#ffeb3b" : "#455a64"));
+        if (p.type === 'tramp') ctx.fillStyle = "#e91e63";
+        else if (p.type === 'conveyor') ctx.fillStyle = "#757575";
+        else if (p.type === 'ice') ctx.fillStyle = "#80deea";
+        else if (p.type === 'crumble') ctx.fillStyle = `rgb(${255 * (1-p.crackTimer)}, ${150 * p.crackTimer}, 50)`;
+        else ctx.fillStyle = "#455a64";
         ctx.fillRect(p.x, p.y, p.width, p.height);
     });
     items.forEach(item => { if (!item.collected) { ctx.fillStyle = "#ffeb3b"; ctx.beginPath(); ctx.arc(item.x+5, item.y+5, 8, 0, Math.PI*2); ctx.fill(); } });
     
-    // Skin Rendering
     if (playerColor === 'rainbow') ctx.fillStyle = `hsl(${(Date.now() / 10) % 360}, 100%, 50%)`;
-    else if (playerColor === 'lava') { ctx.fillStyle = "#ff5722"; ctx.shadowBlur = 10; ctx.shadowColor = "#ffeb3b"; }
+    else if (playerColor === 'lava') { ctx.fillStyle = "#d84315"; ctx.shadowBlur = 10; ctx.shadowColor = "#ffeb3b"; }
     else if (playerColor === 'electric') { ctx.fillStyle = "#00d2ff"; ctx.shadowBlur = 15; ctx.shadowColor = "#fff"; }
     else if (playerColor === 'ghost') { ctx.globalAlpha = 0.4; ctx.fillStyle = "white"; }
     else if (playerColor === 'neon') { ctx.fillStyle = "#39ff14"; ctx.shadowBlur = 15; ctx.shadowColor = "#39ff14"; }
