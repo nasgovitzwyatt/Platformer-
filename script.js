@@ -8,6 +8,13 @@ const skinMenuBtn = document.getElementById("skinMenuBtn");
 const settingsBtn = document.getElementById("settingsBtn");
 const backBtn = document.getElementById("backToMenu");
 
+// Settings Config
+let config = {
+    Jump: localStorage.getItem("keyJump") || "Space",
+    Left: localStorage.getItem("keyLeft") || "ArrowLeft",
+    Right: localStorage.getItem("keyRight") || "ArrowRight"
+};
+
 let gravity = 0.5, cameraY = 0, maxHeight = 0, gameActive = false;
 let highScore = localStorage.getItem("parkourHigh") || 0;
 let playerColor = "#ff5722";
@@ -19,20 +26,60 @@ const player = { x: 180, y: 500, width: 30, height: 30, velX: 0, velY: 0, jumpin
 let platforms = [];
 const keys = {};
 
-// Navigation Logic
-skinMenuBtn.onclick = () => {
+// Navigation & Clicks
+startBtn.onclick = (e) => { e.stopPropagation(); init(); };
+skinMenuBtn.onclick = (e) => { 
+    e.stopPropagation();
     skinMenu.style.display = skinMenu.style.display === "none" ? "block" : "none";
 };
-
-settingsBtn.onclick = () => {
+settingsBtn.onclick = (e) => { 
+    e.stopPropagation();
     mainMenu.style.display = "none";
     settingsModal.style.display = "flex";
 };
-
-backBtn.onclick = () => {
+backBtn.onclick = (e) => { 
+    e.stopPropagation();
     settingsModal.style.display = "none";
     mainMenu.style.display = "flex";
 };
+
+// Rebinding Logic
+let bindingKey = null;
+const bindButtons = {
+    Jump: document.getElementById("bindJump"),
+    Left: document.getElementById("bindLeft"),
+    Right: document.getElementById("bindRight")
+};
+
+Object.keys(bindButtons).forEach(action => {
+    bindButtons[action].innerText = config[action];
+    bindButtons[action].onclick = () => {
+        bindingKey = action;
+        bindButtons[action].innerText = "...";
+        bindButtons[action].classList.add("waiting");
+    };
+});
+
+window.addEventListener("keydown", e => {
+    if (bindingKey) {
+        config[bindingKey] = e.code;
+        localStorage.setItem("key" + bindingKey, e.code);
+        bindButtons[bindingKey].innerText = e.code;
+        bindButtons[bindingKey].classList.remove("waiting");
+        bindingKey = null;
+        return;
+    }
+    
+    // Prevent scrolling
+    if ([config.Jump, config.Left, config.Right, "ArrowUp"].includes(e.code)) e.preventDefault();
+    
+    if ((e.code === config.Jump || e.code === "ArrowUp") && !player.jumping && gameActive) {
+        player.velY = JUMP_FORCE; player.jumping = true;
+    }
+    keys[e.code] = true;
+});
+
+window.addEventListener("keyup", e => keys[e.code] = false);
 
 function updateUI() {
     document.getElementById("highScoreBoard").innerText = `Best: ${highScore}m`;
@@ -56,7 +103,7 @@ function updateUI() {
 function changeSkin(color, req) {
     if (highScore >= req) {
         playerColor = color;
-        skinMenu.style.display = "none"; // Close menu after selection
+        skinMenu.style.display = "none";
     }
 }
 
@@ -66,12 +113,9 @@ function init() {
     platforms = [{ x: 0, y: 580, width: 400, height: 20, speed: 0, type: 'normal', isCracking: false }];
     generatePlatforms();
     gameActive = true;
-    
-    // Hide all menus
     mainMenu.style.display = "none";
     settingsModal.style.display = "none";
     skinMenu.style.display = "none"; 
-    
     updateUI();
     update();
 }
@@ -83,18 +127,15 @@ function generatePlatforms() {
         lastY -= (90 + gap) + Math.random() * 40; 
         let h = (500 - lastY) / 10;
         let type = 'normal', roll = Math.random();
-
         if (h > 40) {
             if (roll < 0.12) type = 'tramp'; 
             else if (roll < 0.28) type = 'crumble'; 
             else if (h > 140 && roll < 0.45) type = 'ice';
         }
-
         let moveSpeed = 0;
         if (h > 100 && Math.random() < 0.45) {
             moveSpeed = (Math.random() > 0.5 ? 2.2 : -2.2) + (h / 350);
         }
-
         platforms.push({
             x: Math.random() * 320, y: lastY,
             width: Math.max(40, 80 - (h / 35)), 
@@ -106,28 +147,23 @@ function generatePlatforms() {
 
 function update() {
     if (!gameActive) return;
-
     let h = Math.max(0, Math.floor((500 - player.y) / 10));
-    
     if (h >= 1000) {
         windForce = Math.sin(Date.now() / 1000) * 1.5;
         player.velX += windForce;
     }
-
     let friction = player.onIce ? 0.98 : 0.8;
     let accel = player.onIce ? 0.3 : 1;
 
-    if (keys["ArrowRight"]) player.velX += accel;
-    else if (keys["ArrowLeft"]) player.velX -= accel;
+    if (keys[config.Right]) player.velX += accel;
+    else if (keys[config.Left]) player.velX -= accel;
     
     player.velX *= friction;
     player.velY += gravity;
     player.x += player.velX;
     player.y += player.velY;
-
     if (player.x < -30) player.x = canvas.width;
     if (player.x > canvas.width) player.x = -30;
-
     player.onIce = false; 
 
     platforms = platforms.filter(plat => {
@@ -137,7 +173,6 @@ function update() {
         }
         if (player.velY > 0 && player.y + 30 > plat.y && player.y + 30 < plat.y + 15 + player.velY &&
             player.x + 30 > plat.x && player.x < plat.x + plat.width) {
-            
             if (plat.type === 'tramp') {
                 player.velY = BOUNCE_FORCE;
                 player.jumping = true;
@@ -160,7 +195,6 @@ function update() {
         document.getElementById("scoreBoard").innerText = `Height: ${maxHeight}m`;
     }
     if (player.y > cameraY + canvas.height + 100) gameOver();
-
     hue++; 
     draw();
     requestAnimationFrame(update);
@@ -170,18 +204,6 @@ function draw() {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     ctx.save();
     ctx.translate(0, -cameraY);
-    
-    if (maxHeight >= 1000) {
-        ctx.strokeStyle = "rgba(255,255,255,0.3)";
-        ctx.beginPath();
-        for(let i=0; i<5; i++) {
-            let lineY = cameraY + (i * 150) + (hue % 150);
-            ctx.moveTo(0, lineY);
-            ctx.lineTo(400, lineY + (windForce * 20));
-        }
-        ctx.stroke();
-    }
-
     platforms.forEach(p => {
         if (p.type === 'ice') ctx.fillStyle = "#80deea";
         else if (p.type === 'crumble') {
@@ -192,7 +214,8 @@ function draw() {
         else ctx.fillStyle = "#455a64";
         ctx.fillRect(p.x, p.y, p.width, p.height);
     });
-
+    
+    // Player Drawing Logic (Stripped, Rainbow, etc.) stays exactly as your original...
     if (playerColor === 'rainbow') ctx.fillStyle = `hsl(${hue}, 100%, 50%)`;
     else if (playerColor === 'striped') {
         let grad = ctx.createLinearGradient(player.x, player.y, player.x+30, player.y+30);
@@ -230,33 +253,22 @@ function gameOver() {
     }
     document.getElementById("statusText").innerText = "YOU FELL!";
     startBtn.innerText = "RETRY";
-    mainMenu.style.display = "flex"; // Show menu again
+    mainMenu.style.display = "flex";
     updateUI();
 }
 
-// Controls
-window.addEventListener("keydown", e => {
-    if (["Space", "ArrowUp", "ArrowLeft", "ArrowRight"].includes(e.code)) e.preventDefault();
-    if ((e.code === "Space" || e.code === "ArrowUp") && !player.jumping) {
-        player.velY = JUMP_FORCE; player.jumping = true;
-    }
-    keys[e.code] = true;
-});
-window.addEventListener("keyup", e => keys[e.code] = false);
-
-startBtn.onclick = init;
-
-const setupBtn = (id, key) => {
+// Mobile Buttons
+const setupBtn = (id, action) => {
     const btn = document.getElementById(id);
     btn.addEventListener("touchstart", (e) => {
         e.preventDefault();
-        if (id === "jumpBtn") { if (!player.jumping) { player.velY = JUMP_FORCE; player.jumping = true; } }
-        else keys[key] = true;
+        if (action === "Jump") { if (!player.jumping) { player.velY = JUMP_FORCE; player.jumping = true; } }
+        else keys[config[action]] = true;
     }, { passive: false });
-    btn.addEventListener("touchend", (e) => { e.preventDefault(); keys[key] = false; }, { passive: false });
+    btn.addEventListener("touchend", (e) => { e.preventDefault(); keys[config[action]] = false; }, { passive: false });
 };
-setupBtn("leftBtn", "ArrowLeft");
-setupBtn("rightBtn", "ArrowRight");
-setupBtn("jumpBtn", "Space");
+setupBtn("leftBtn", "Left");
+setupBtn("rightBtn", "Right");
+setupBtn("jumpBtn", "Jump");
 
 updateUI();
