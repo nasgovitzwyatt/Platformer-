@@ -41,8 +41,30 @@ document.getElementById("startBtn").onclick = () => init();
 document.getElementById("shopBtn").onclick = () => { mainMenu.style.display = "none"; shopMenu.style.display = "flex"; updateUI(); };
 document.getElementById("closeShop").onclick = () => { shopMenu.style.display = "none"; mainMenu.style.display = "flex"; };
 document.getElementById("skinMenuBtn").onclick = () => { skinMenu.style.display = (skinMenu.style.display === "none" ? "block" : "none"); };
-document.getElementById("settingsBtn").onclick = () => { mainMenu.style.display = "none"; settingsModal.style.display = "flex"; };
+document.getElementById("settingsBtn").onclick = () => { mainMenu.style.display = "none"; settingsModal.style.display = "flex"; updateUI(); };
 document.getElementById("backToMenu").onclick = () => { settingsModal.style.display = "none"; mainMenu.style.display = "flex"; };
+
+// --- KEYBINDING LOGIC ---
+function setupBinds() {
+    const bindButtons = { Jump: "bindJump", Left: "bindLeft", Right: "bindRight" };
+    Object.keys(bindButtons).forEach(action => {
+        const btn = document.getElementById(bindButtons[action]);
+        if (btn) {
+            btn.innerText = config[action].replace("Arrow", "");
+            btn.onclick = () => {
+                btn.innerText = "...";
+                const listen = (e) => {
+                    config[action] = e.code;
+                    localStorage.setItem(`key${action}`, e.code);
+                    btn.innerText = e.code.replace("Arrow", "");
+                    window.removeEventListener("keydown", listen);
+                };
+                window.addEventListener("keydown", listen);
+            };
+        }
+    });
+}
+setupBinds();
 
 function buyItem(type, name, price) {
     if (ownedItems.includes(name)) { 
@@ -70,7 +92,18 @@ function updateUI() {
     document.getElementById("highScoreBoard").innerText = `Best: ${highScore}m`;
     document.getElementById("scoreBoard").innerText = `Height: ${maxHeight}m`;
     
-    // Skin Locking Logic
+    // Background Buttons
+    Object.keys(bgMultipliers).forEach(bg => {
+        const p = document.getElementById(`price-${bg}`);
+        if (p) {
+            if (ownedItems.includes(bg)) {
+                p.innerText = (currentBGName === bg) ? "EQUIPPED" : "OWNED";
+                p.parentElement.classList.toggle("selected", currentBGName === bg);
+            }
+        }
+    });
+
+    // Skin Gating
     const skinData = [
         {id: "skin-orange", req: 0}, {id: "skin-blue", req: 50}, {id: "skin-green", req: 100}, {id: "skin-purple", req: 150},
         {id: "skin-gold", req: 200}, {id: "skin-mint", req: 250}, {id: "skin-lava", req: 300}, {id: "skin-camo", req: 350},
@@ -106,8 +139,10 @@ window.addEventListener("keydown", e => {
     if ((e.code === config.Jump || e.code === "Space") && gameActive) { 
         if (!player.jumping) {
             player.velY = JUMP_FORCE; player.jumping = true; jumpCount = 1;
+            player.onIce = false;
         } else if (powerupStatus.DoubleJump && jumpCount < 2) {
             player.velY = JUMP_FORCE; jumpCount = 2;
+            player.onIce = false;
         }
     }
     keys[e.code] = true;
@@ -121,7 +156,7 @@ function init() {
     cameraY = 0; maxHeight = 0; jumpCount = 0; player.onIce = false;
     platforms.push({ x: 0, y: 580, width: 400, height: 20, type: 'normal', speed: 0, crackTimer: 1.0, isCracking: false }); 
     generatePlatforms(); 
-    gameActive = true; mainMenu.style.display = "none"; updateUI(); update();
+    gameActive = true; mainMenu.style.display = "none"; skinMenu.style.display = "none"; updateUI(); update();
 }
 
 function generatePlatforms() {
@@ -130,6 +165,7 @@ function generatePlatforms() {
         lastY -= (95 + Math.random() * 45);
         let roll = Math.random();
         if (roll < 0.035) { wormholes.push({ x: Math.random() * 340, y: lastY, width: 40, height: 40 }); continue; }
+        
         let type = 'normal';
         if (roll > 0.6) {
             let sub = Math.random();
@@ -139,7 +175,16 @@ function generatePlatforms() {
             else type = 'ice';
         }
         platforms.push({ x: Math.random() * 300, y: lastY, width: 75, height: 12, type: type, speed: (Math.random() < 0.2 ? 2 : 0), beltDir: 1.5, crackTimer: 1.0, isCracking: false });
-        if (Math.random() < 0.3) items.push({ x: Math.random() * 300, y: lastY - 25, collected: false });
+        
+        // --- COIN SPACING FIX ---
+        // Instead of stacking on the platform, coins now spawn at a random height between platforms
+        if (Math.random() < 0.3) {
+            items.push({ 
+                x: Math.random() * 360, 
+                y: lastY + 20 + (Math.random() * 40), 
+                collected: false 
+            });
+        }
     }
 }
 
@@ -147,7 +192,6 @@ function update() {
     if (!gameActive) return;
     let timeScale = powerupStatus.SlowMo ? 0.7 : 1.0;
     
-    // Void Skin particles
     if (selectedSkinId === "skin-void") {
         for(let i=0; i<3; i++) {
             particles.push({
@@ -158,10 +202,10 @@ function update() {
     }
     particles.forEach((p, i) => { p.x += p.vx; p.y += p.vy; p.life -= 0.04; if(p.life <= 0) particles.splice(i, 1); });
 
-    if (keys[config.Left] || keys["ArrowLeft"]) player.velX -= (player.onIce ? 0.05 : 1.4); 
-    if (keys[config.Right] || keys["ArrowRight"]) player.velX += (player.onIce ? 0.05 : 1.4);
+    if (keys[config.Left]) player.velX -= (player.onIce ? 0.05 : 1.3); 
+    if (keys[config.Right]) player.velX += (player.onIce ? 0.05 : 1.3);
     
-    let f = player.onIce ? 0.999 : 0.7; // ICE PHYSICS
+    let f = player.onIce ? 0.999 : 0.7;
     player.velX *= f;
     player.x += player.velX; 
     player.y += player.velY * timeScale;
@@ -169,7 +213,6 @@ function update() {
     
     if (player.x < -30) player.x = canvas.width; if (player.x > canvas.width) player.x = -30;
 
-    // Wormhole Collision
     wormholes.forEach((wh, index) => {
         if (Math.abs(player.x - wh.x) < 35 && Math.abs(player.y - wh.y) < 35) {
             player.y -= 1500; cameraY -= 1500; wormholes.splice(index, 1);
