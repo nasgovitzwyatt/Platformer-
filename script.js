@@ -26,10 +26,11 @@ let config = {
     Right: localStorage.getItem("keyRight") || "ArrowRight" 
 };
 
-// --- POWERUP STATE ---
+// --- POWERUP & PARTICLE STATE ---
 let powerupStatus = JSON.parse(localStorage.getItem("powerupStatus")) || {
     DoubleJump: false, Magnet: false, SlowMo: false
 };
+let particles = [];
 
 let gravity = 0.5, cameraY = 0, maxHeight = 0, gameActive = false, animationId;
 const JUMP_FORCE = -13.5, BOUNCE_FORCE = -22;
@@ -135,7 +136,7 @@ window.addEventListener("keyup", e => keys[e.code] = false);
 
 function init() {
     cancelAnimationFrame(animationId);
-    platforms = []; items = []; wormholes = [];
+    platforms = []; items = []; wormholes = []; particles = [];
     player.x = 180; player.y = 500; player.velX = 0; player.velY = 0; 
     cameraY = 0; maxHeight = 0; jumpCount = 0; player.onIce = false;
     
@@ -150,14 +151,14 @@ function init() {
 
 function generatePlatforms() {
     let lastY = platforms[0].y;
-    for (let i = 0; i < 800; i++) { // Increased generation range
+    for (let i = 0; i < 1000; i++) { 
         let heightM = (500 - lastY) / 10;
         let gapModifier = Math.min(55, heightM / 18);
         lastY -= (90 + gapModifier + Math.random() * 40);
         let roll = Math.random();
 
-        // 2% WORMHOLE SPAWN
-        if (roll < 0.02) {
+        // 3% WORMHOLE SPAWN
+        if (roll < 0.03) {
             wormholes.push({ x: Math.random() * 340, y: lastY, width: 40, height: 40 });
             continue; 
         }
@@ -183,26 +184,38 @@ function generatePlatforms() {
 function update() {
     if (!gameActive) return;
     mobileControls.style.pointerEvents = "auto";
-    
-    // Ice state only persists while grounded
-    if (player.velY !== 0) player.onIce = false; 
 
     let timeScale = powerupStatus.SlowMo ? 0.7 : 1.0;
-    let horizontalAcc = 1.4; 
+    
+    // --- VOID SKIN PARTICLES ---
+    if (selectedSkinId === "skin-void") {
+        for(let i=0; i<2; i++) {
+            particles.push({
+                x: player.x + Math.random() * 30,
+                y: player.y + Math.random() * 30,
+                vx: (Math.random() - 0.5) * 2,
+                vy: (Math.random() - 0.5) * 2,
+                life: 1.0,
+                color: Math.random() > 0.5 ? "#a020f0" : "#000000"
+            });
+        }
+    }
+    particles.forEach((p, i) => {
+        p.x += p.vx; p.y += p.vy; p.life -= 0.02;
+        if(p.life <= 0) particles.splice(i, 1);
+    });
 
+    // Horizontal logic
     if (keys[config.Left] || keys["ArrowLeft"]) {
-        player.velX -= (player.onIce ? 0.15 : horizontalAcc); 
+        player.velX -= (player.onIce ? 0.08 : 1.4); 
     }
     if (keys[config.Right] || keys["ArrowRight"]) {
-        player.velX += (player.onIce ? 0.15 : horizontalAcc);
+        player.velX += (player.onIce ? 0.08 : 1.4);
     }
     
-    // ICE PHYSICS: 0.995 friction makes you slide for a long time
-    let friction = player.onIce ? 0.995 : 0.7;
+    // --- ICE FRICTION FIX: 0.999 is nearly friction-less ---
+    let friction = player.onIce ? 0.999 : 0.7;
     player.velX *= friction; 
-    
-    const maxSpeed = 12;
-    if (Math.abs(player.velX) > maxSpeed) player.velX = Math.sign(player.velX) * maxSpeed;
     
     player.x += player.velX; 
     player.y += player.velY * timeScale;
@@ -210,7 +223,6 @@ function update() {
     
     if (player.x < -30) player.x = canvas.width; if (player.x > canvas.width) player.x = -30;
 
-    // WORMHOLE COLLISION
     wormholes.forEach((wh, index) => {
         if (Math.abs(player.x - wh.x) < 35 && Math.abs(player.y - wh.y) < 35) {
             player.y -= 1500; cameraY -= 1500;
@@ -219,21 +231,18 @@ function update() {
         }
     });
 
+    // Collision resets Ice state unless touching ice
+    let touchingIceThisFrame = false;
+
     platforms.forEach(plat => {
         if (player.velY > 0 && player.y + 30 > plat.y && player.y + 30 < plat.y + 15 + player.velY && 
             player.x + 30 > plat.x && player.x < plat.x + plat.width) {
             if (plat.type === 'tramp') { 
-                player.velY = BOUNCE_FORCE; 
-                player.jumping = true; jumpCount = 1;
-                player.onIce = false;
-            } 
-            else { 
+                player.velY = BOUNCE_FORCE; player.jumping = true; jumpCount = 1;
+            } else { 
                 player.velY = 0; player.y = plat.y - 30; player.jumping = false; jumpCount = 0;
-                
-                // Set ice state based on platform type
-                player.onIce = (plat.type === 'ice');
-                
-                if (plat.type === 'conveyor') player.velX += (plat.beltDir * 3.5); 
+                if (plat.type === 'ice') touchingIceThisFrame = true;
+                if (plat.type === 'conveyor') player.velX += (plat.beltDir * 4.5); 
                 if (plat.type === 'crumble') plat.isCracking = true; 
             }
         }
@@ -244,6 +253,7 @@ function update() {
         }
     });
     
+    player.onIce = touchingIceThisFrame;
     platforms = platforms.filter(p => p.type !== 'crumble' || p.crackTimer > 0);
 
     items.forEach(item => { 
@@ -283,7 +293,14 @@ function draw() {
     
     ctx.save(); ctx.translate(0, -cameraY);
     
-    // Wormhole Rendering
+    // Draw Particles (Void Skin)
+    particles.forEach(p => {
+        ctx.globalAlpha = p.life;
+        ctx.fillStyle = p.color;
+        ctx.fillRect(p.x, p.y, 4, 4);
+    });
+    ctx.globalAlpha = 1.0;
+
     wormholes.forEach(wh => {
         let pulse = 5 + Math.sin(Date.now() / 100) * 5;
         ctx.fillStyle = "#00ffff"; ctx.shadowBlur = 15 + pulse; ctx.shadowColor = "#00ffff";
@@ -303,8 +320,18 @@ function draw() {
     
     items.forEach(item => { if (!item.collected) { ctx.fillStyle = "#ffeb3b"; ctx.beginPath(); ctx.arc(item.x+5, item.y+5, 8, 0, Math.PI*2); ctx.fill(); } });
     
-    ctx.fillStyle = (playerColor === 'rainbow') ? `hsl(${(Date.now() / 10) % 360}, 100%, 50%)` : playerColor;
-    ctx.fillRect(player.x, player.y, 30, 30);
+    if (playerColor === 'rainbow') { ctx.fillStyle = `hsl(${(Date.now() / 10) % 360}, 100%, 50%)`; }
+    else if (selectedSkinId === 'skin-void') {
+        // Dynamic Black/Purple Pulsing
+        let pulse = Math.abs(Math.sin(Date.now() / 500));
+        ctx.fillStyle = "#000000";
+        ctx.strokeStyle = `rgb(${160 * pulse}, 32, ${240 * pulse})`;
+        ctx.lineWidth = 4;
+        ctx.fillRect(player.x, player.y, 30, 30);
+        ctx.strokeRect(player.x, player.y, 30, 30);
+    }
+    else { ctx.fillStyle = playerColor; ctx.fillRect(player.x, player.y, 30, 30); }
+    
     ctx.restore();
 }
 
