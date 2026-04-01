@@ -18,7 +18,7 @@ const JUMP_FORCE = -13.5, BOUNCE_FORCE = -22;
 const player = { x: 180, y: 500, width: 30, height: 30, velX: 0, velY: 0, jumping: false, onIce: false, conveyorForce: 0 };
 let platforms = [], items = [], keys = {};
 
-// Navigation with Click Fix
+// Navigation
 document.getElementById("startBtn").onclick = (e) => { e.stopPropagation(); init(); };
 document.getElementById("shopBtn").onclick = (e) => { e.stopPropagation(); mainMenu.style.display = "none"; shopMenu.style.display = "flex"; updateUI(); };
 document.getElementById("closeShop").onclick = (e) => { e.stopPropagation(); shopMenu.style.display = "none"; mainMenu.style.display = "flex"; };
@@ -98,20 +98,31 @@ function generatePlatforms() {
     let lastY = platforms[platforms.length - 1].y;
     for (let i = 0; i < 500; i++) {
         let heightM = (500 - lastY) / 10;
-        let gapModifier = Math.min(60, heightM / 15);
+        let gapModifier = Math.min(55, heightM / 18); // Slightly smaller gaps for relief
         lastY -= (90 + gapModifier + Math.random() * 40);
+        
         let type = 'normal', roll = Math.random();
-        let normalChance = Math.max(0.1, 0.6 - (heightM / 1000));
+        
+        // Relief: Normal platforms are more popular (65% base chance)
+        let normalChance = Math.max(0.3, 0.65 - (heightM / 1800));
+        
         if (roll > normalChance) {
             let subRoll = Math.random();
-            if (subRoll < 0.25) type = 'tramp'; 
-            else if (subRoll < 0.5) type = 'conveyor'; 
+            if (subRoll < 0.35) type = 'tramp'; 
+            else if (subRoll < 0.45) type = 'conveyor'; // Rare Conveyors (Only 10% of specials)
             else if (subRoll < 0.75) type = 'crumble'; 
             else type = 'ice';
         }
-        // Rules: Ice, Tramp, and Crumble can move.
-        let moveSpeed = (type !== 'conveyor' && Math.random() < 0.25) ? (1.5 + (heightM/500)) : 0;
-        platforms.push({ x: Math.random() * 300, y: lastY, width: Math.max(40, 80 - (heightM / 25)), height: 12, type: type, speed: moveSpeed, beltDir: 1.5, crackTimer: 1.0, isCracking: false });
+
+        // Ice, Tramp, and Crumble can move.
+        let moveSpeed = (type !== 'conveyor' && Math.random() < 0.25) ? (1.5 + (heightM/600)) : 0;
+        
+        platforms.push({ 
+            x: Math.random() * 300, y: lastY, 
+            width: Math.max(45, 80 - (heightM / 30)), 
+            height: 12, type: type, speed: moveSpeed, 
+            beltDir: 1.5, crackTimer: 1.0, isCracking: false 
+        });
         if (Math.random() < 0.3) items.push({ x: platforms[platforms.length-1].x + 35, y: lastY - 25, collected: false });
     }
 }
@@ -152,25 +163,4 @@ function draw() {
     if (currentBGName === "White") { grad.addColorStop(0, "#fff"); grad.addColorStop(1, "#ddd"); }
     else if (currentBGName === "Blue") { grad.addColorStop(0, "#4facfe"); grad.addColorStop(1, "#00f2fe"); }
     else if (currentBGName === "Sunset") { grad.addColorStop(0, "#ff8c00"); grad.addColorStop(1, "#ff0080"); }
-    else if (currentBGName === "Space") { grad.addColorStop(0, "#0f0c29"); grad.addColorStop(1, "#24243e"); }
-    ctx.fillStyle = grad; ctx.fillRect(0, 0, canvas.width, canvas.height);
-    ctx.save(); ctx.translate(0, -cameraY);
-    platforms.forEach(p => {
-        if (p.type === 'tramp') ctx.fillStyle = "#e91e63"; else if (p.type === 'conveyor') ctx.fillStyle = "#757575"; else if (p.type === 'ice') ctx.fillStyle = "#80deea"; else if (p.type === 'crumble') ctx.fillStyle = `rgb(${255 * (1-p.crackTimer)}, ${150 * p.crackTimer}, 50)`; else ctx.fillStyle = "#455a64";
-        ctx.fillRect(p.x, p.y, p.width, p.height);
-    });
-    items.forEach(item => { if (!item.collected) { ctx.fillStyle = "#ffeb3b"; ctx.beginPath(); ctx.arc(item.x+5, item.y+5, 8, 0, Math.PI*2); ctx.fill(); } });
-    
-    if (playerColor === 'rainbow') ctx.fillStyle = `hsl(${(Date.now() / 10) % 360}, 100%, 50%)`; else if (playerColor === 'lava') { ctx.fillStyle = "#d84315"; ctx.shadowBlur = 10; ctx.shadowColor = "#ffeb3b"; } else if (playerColor === 'electric') { ctx.fillStyle = "#00d2ff"; ctx.shadowBlur = 15; ctx.shadowColor = "#fff"; } else if (playerColor === 'ghost') { ctx.globalAlpha = 0.4; ctx.fillStyle = "white"; } else if (playerColor === 'neon') { ctx.fillStyle = "#39ff14"; ctx.shadowBlur = 15; ctx.shadowColor = "#39ff14"; } else { ctx.fillStyle = playerColor; }
-    ctx.fillRect(player.x, player.y, 30, 30);
-    ctx.shadowBlur = 0; ctx.globalAlpha = 1.0; ctx.restore();
-}
-
-function gameOver() { gameActive = false; mainMenu.style.display = "flex"; mobileControls.style.pointerEvents = "none"; updateUI(); }
-const setupBtn = (id, act) => {
-    const btn = document.getElementById(id);
-    btn.ontouchstart = (e) => { e.preventDefault(); if (act === "Jump") { if (!player.jumping && gameActive) { player.velY = JUMP_FORCE; player.jumping = true; } } else keys[config[act]] = true; };
-    btn.ontouchend = () => keys[config[act]] = false;
-};
-setupBtn("leftBtn", "Left"); setupBtn("rightBtn", "Right"); setupBtn("jumpBtn", "Jump");
-updateUI();
+    else if (currentBGName === "Space") { grad.addColorStop(0, "#0f0c
