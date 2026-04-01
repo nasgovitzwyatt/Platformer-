@@ -5,7 +5,10 @@ const mainMenu = document.getElementById("mainMenu"), shopMenu = document.getEle
       settingsModal = document.getElementById("settingsModal"), skinMenu = document.getElementById("skinMenu"),
       mobileControls = document.getElementById("mobileControls");
 
-const bgMultipliers = { "White": 1, "Blue": 1.2, "Sunset": 1.5, "Space": 2 };
+const bgMultipliers = { 
+    "White": 1, "Blue": 1.2, "Forest": 1.3, "Sunset": 1.6, 
+    "Midnight": 2, "Space": 2.5, "Gold": 4, "Void": 10 
+};
 
 let tokens = parseFloat(localStorage.getItem("parkourTokens")) || 0;
 let highScore = parseInt(localStorage.getItem("parkourHigh")) || 0;
@@ -39,11 +42,11 @@ function updateUI() {
     document.getElementById("tokenBoard").innerText = `Tokens: ${Math.floor(tokens)}`;
     document.getElementById("highScoreBoard").innerText = `Best: ${highScore}m`;
     
-    ["White", "Blue", "Sunset", "Space"].forEach(bg => {
+    Object.keys(bgMultipliers).forEach(bg => {
         const btn = document.getElementById(`btn-bg-${bg}`), priceSpan = document.getElementById(`price-${bg}`);
         if (btn) {
             btn.classList.toggle("selected", currentBGName === bg);
-            priceSpan.innerText = (currentBGName === bg) ? "EQUIPPED" : (ownedItems.includes(bg) ? "EQUIP" : priceSpan.innerText);
+            if (ownedItems.includes(bg)) priceSpan.innerText = (currentBGName === bg) ? "EQUIPPED" : "EQUIP";
         }
     });
 
@@ -148,8 +151,13 @@ function draw() {
     let grad = ctx.createLinearGradient(0, 0, 0, canvas.height);
     if (currentBGName === "White") { grad.addColorStop(0, "#fff"); grad.addColorStop(1, "#ddd"); }
     else if (currentBGName === "Blue") { grad.addColorStop(0, "#4facfe"); grad.addColorStop(1, "#00f2fe"); }
+    else if (currentBGName === "Forest") { grad.addColorStop(0, "#134e5e"); grad.addColorStop(1, "#71b280"); }
     else if (currentBGName === "Sunset") { grad.addColorStop(0, "#ff8c00"); grad.addColorStop(1, "#ff0080"); }
+    else if (currentBGName === "Midnight") { grad.addColorStop(0, "#232526"); grad.addColorStop(1, "#414345"); }
     else if (currentBGName === "Space") { grad.addColorStop(0, "#0f0c29"); grad.addColorStop(1, "#24243e"); }
+    else if (currentBGName === "Gold") { grad.addColorStop(0, "#bf953f"); grad.addColorStop(1, "#fcf6ba"); }
+    else if (currentBGName === "Void") { grad.addColorStop(0, "#000"); grad.addColorStop(1, "#111"); }
+    
     ctx.fillStyle = grad; ctx.fillRect(0, 0, canvas.width, canvas.height);
     ctx.save(); ctx.translate(0, -cameraY);
     platforms.forEach(p => {
@@ -157,7 +165,12 @@ function draw() {
         ctx.fillRect(p.x, p.y, p.width, p.height);
     });
     items.forEach(item => { if (!item.collected) { ctx.fillStyle = "#ffeb3b"; ctx.beginPath(); ctx.arc(item.x+5, item.y+5, 8, 0, Math.PI*2); ctx.fill(); } });
-    if (playerColor === 'rainbow') ctx.fillStyle = `hsl(${(Date.now() / 10) % 360}, 100%, 50%)`; else if (playerColor === 'lava') { ctx.fillStyle = "#d84315"; ctx.shadowBlur = 10; ctx.shadowColor = "#ffeb3b"; } else if (playerColor === 'electric') { ctx.fillStyle = "#00d2ff"; ctx.shadowBlur = 15; ctx.shadowColor = "#fff"; } else if (playerColor === 'ghost') { ctx.globalAlpha = 0.4; ctx.fillStyle = "white"; } else if (playerColor === 'neon') { ctx.fillStyle = "#39ff14"; ctx.shadowBlur = 15; ctx.shadowColor = "#39ff14"; } else { ctx.fillStyle = playerColor; }
+    if (playerColor === 'rainbow') { ctx.fillStyle = `hsl(${(Date.now() / 10) % 360}, 100%, 50%)`; }
+    else if (playerColor === 'lava') { ctx.fillStyle = "#d84315"; ctx.shadowBlur = 10; ctx.shadowColor = "#ffeb3b"; }
+    else if (playerColor === 'electric') { ctx.fillStyle = "#00d2ff"; ctx.shadowBlur = 15; ctx.shadowColor = "#fff"; }
+    else if (playerColor === 'ghost') { ctx.globalAlpha = 0.4; ctx.fillStyle = "white"; }
+    else if (playerColor === 'neon') { ctx.fillStyle = "#39ff14"; ctx.shadowBlur = 15; ctx.shadowColor = "#39ff14"; }
+    else { ctx.fillStyle = playerColor; }
     ctx.fillRect(player.x, player.y, 30, 30);
     ctx.shadowBlur = 0; ctx.globalAlpha = 1.0; ctx.restore();
 }
