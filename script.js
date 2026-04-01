@@ -12,7 +12,6 @@ const bgMultipliers = {
     "Midnight": 2, "Space": 2.5, "Gold": 4, "Void": 10 
 };
 
-// --- DATA PERSISTENCE ---
 let tokens = parseFloat(localStorage.getItem("parkourTokens")) || 0;
 let highScore = parseInt(localStorage.getItem("parkourHigh")) || 0;
 let ownedItems = JSON.parse(localStorage.getItem("ownedItems")) || ["White", "Blue"];
@@ -26,7 +25,6 @@ let config = {
     Right: localStorage.getItem("keyRight") || "ArrowRight" 
 };
 
-// --- POWERUP & PARTICLE STATE ---
 let powerupStatus = JSON.parse(localStorage.getItem("powerupStatus")) || {
     DoubleJump: false, Magnet: false, SlowMo: false
 };
@@ -37,7 +35,7 @@ const JUMP_FORCE = -13.5, BOUNCE_FORCE = -22;
 const player = { x: 180, y: 500, width: 30, height: 30, velX: 0, velY: 0, jumping: false, onIce: false };
 let platforms = [], items = [], keys = {}, wormholes = [], jumpCount = 0;
 
-// --- NAVIGATION ---
+// Navigation
 document.getElementById("startBtn").onclick = (e) => { e.stopPropagation(); init(); };
 document.getElementById("shopBtn").onclick = (e) => { e.stopPropagation(); mainMenu.style.display = "none"; shopMenu.style.display = "flex"; updateUI(); };
 document.getElementById("closeShop").onclick = (e) => { e.stopPropagation(); shopMenu.style.display = "none"; mainMenu.style.display = "flex"; };
@@ -71,7 +69,7 @@ function updateUI() {
     document.getElementById("highScoreBoard").innerText = `Best: ${highScore}m`;
     document.getElementById("scoreBoard").innerText = `Height: ${maxHeight}m`;
     
-    // STRICT SKIN UNLOCK
+    // Strict Skin Logic
     const skinData = [
         {id: "skin-orange", req: 0}, {id: "skin-blue", req: 50}, {id: "skin-green", req: 100}, {id: "skin-purple", req: 150},
         {id: "skin-gold", req: 200}, {id: "skin-mint", req: 250}, {id: "skin-lava", req: 300}, {id: "skin-camo", req: 350},
@@ -122,13 +120,9 @@ function init() {
     platforms = []; items = []; wormholes = []; particles = [];
     player.x = 180; player.y = 500; player.velX = 0; player.velY = 0; 
     cameraY = 0; maxHeight = 0; jumpCount = 0; player.onIce = false;
-    
     platforms.push({ x: 0, y: 580, width: 400, height: 20, type: 'normal', speed: 0, crackTimer: 1.0, isCracking: false }); 
     generatePlatforms(); 
-    gameActive = true;
-    mainMenu.style.display = "none"; shopMenu.style.display = "none";
-    updateUI(); 
-    update();
+    gameActive = true; mainMenu.style.display = "none"; updateUI(); update();
 }
 
 function generatePlatforms() {
@@ -136,12 +130,7 @@ function generatePlatforms() {
     for (let i = 0; i < 1200; i++) { 
         lastY -= (95 + Math.random() * 45);
         let roll = Math.random();
-
-        if (roll < 0.035) {
-            wormholes.push({ x: Math.random() * 340, y: lastY, width: 40, height: 40 });
-            continue; 
-        }
-
+        if (roll < 0.035) { wormholes.push({ x: Math.random() * 340, y: lastY, width: 40, height: 40 }); continue; }
         let type = 'normal';
         if (roll > 0.6) {
             let sub = Math.random();
@@ -150,97 +139,75 @@ function generatePlatforms() {
             else if (sub < 0.7) type = 'crumble'; 
             else type = 'ice';
         }
-        platforms.push({ 
-            x: Math.random() * 300, y: lastY, width: 75, 
-            height: 12, type: type, speed: (Math.random() < 0.2 ? 2 : 0), beltDir: 1.5, crackTimer: 1.0, isCracking: false 
-        });
-        if (Math.random() < 0.3) items.push({ x: platforms[platforms.length-1].x + 30, y: lastY - 25, collected: false });
+        platforms.push({ x: Math.random() * 300, y: lastY, width: 75, height: 12, type: type, speed: (Math.random() < 0.2 ? 2 : 0), beltDir: 1.5, crackTimer: 1.0, isCracking: false });
+        if (Math.random() < 0.3) items.push({ x: Math.random() * 300, y: lastY - 25, collected: false });
     }
 }
 
 function update() {
     if (!gameActive) return;
-
     let timeScale = powerupStatus.SlowMo ? 0.7 : 1.0;
     
-    // --- VOID PARTICLES ---
+    // Void Skin Particles
     if (selectedSkinId === "skin-void") {
         for(let i=0; i<3; i++) {
             particles.push({
                 x: player.x + 15 + (Math.random()-0.5)*20, y: player.y + 15 + (Math.random()-0.5)*20,
-                vx: (Math.random()-0.5)*2, vy: (Math.random()-0.5)*2,
-                life: 1.0, color: Math.random() > 0.5 ? "#7b1fa2" : "#000000"
+                vx: (Math.random()-0.5)*2, vy: (Math.random()-0.5)*2, life: 1.0, color: Math.random() > 0.5 ? "#7b1fa2" : "#000000"
             });
         }
     }
-    particles.forEach((p, i) => {
-        p.x += p.vx; p.y += p.vy; p.life -= 0.04;
-        if(p.life <= 0) particles.splice(i, 1);
-    });
+    particles.forEach((p, i) => { p.x += p.vx; p.y += p.vy; p.life -= 0.04; if(p.life <= 0) particles.splice(i, 1); });
 
-    // --- PHYSICS ---
+    // Movement Physics
     if (keys[config.Left] || keys["ArrowLeft"]) player.velX -= (player.onIce ? 0.05 : 1.3); 
     if (keys[config.Right] || keys["ArrowRight"]) player.velX += (player.onIce ? 0.05 : 1.3);
     
-    // ICE FRICTION (EXTREME)
-    let f = player.onIce ? 0.999 : 0.7;
+    let f = player.onIce ? 0.999 : 0.7; // Ice Physics
     player.velX *= f;
-    
     player.x += player.velX; 
     player.y += player.velY * timeScale;
     player.velY += gravity * timeScale;
     
     if (player.x < -30) player.x = canvas.width; if (player.x > canvas.width) player.x = -30;
 
-    // Wormholes
+    // Wormhole Collision
     wormholes.forEach((wh, index) => {
         if (Math.abs(player.x - wh.x) < 35 && Math.abs(player.y - wh.y) < 35) {
-            player.y -= 1500; cameraY -= 1500;
-            platforms.push({ x: player.x - 20, y: player.y + 50, width: 100, height: 12, type: 'normal', speed: 0, crackTimer: 1.0, isCracking: false });
-            wormholes.splice(index, 1);
+            player.y -= 1500; cameraY -= 1500; wormholes.splice(index, 1);
+            platforms.push({ x: player.x-20, y: player.y+50, width: 100, height: 12, type: 'normal', speed: 0, crackTimer: 1.0, isCracking: false });
         }
     });
 
-    // Reset ice unless colliding
-    let onIceThisFrame = false;
-
+    let touchingIce = false;
     platforms.forEach(p => {
-        if (player.velY > 0 && player.y + 30 > p.y && player.y + 30 < p.y + 15 + player.velY && 
-            player.x + 30 > p.x && player.x < p.x + p.width) {
+        if (player.velY > 0 && player.y + 30 > p.y && player.y + 30 < p.y + 15 + player.velY && player.x + 30 > p.x && player.x < p.x + p.width) {
             if (p.type === 'tramp') { player.velY = BOUNCE_FORCE; player.jumping = true; }
             else {
                 player.velY = 0; player.y = p.y - 30; player.jumping = false; jumpCount = 0;
-                if (p.type === 'ice') onIceThisFrame = true;
-                if (p.type === 'conveyor') player.velX += (p.beltDir * 4);
+                if (p.type === 'ice') touchingIce = true;
+                if (p.type === 'conveyor') player.velX += 4;
                 if (p.type === 'crumble') p.isCracking = true;
             }
         }
         if (p.speed) { p.x += p.speed; if (p.x < 0 || p.x > 320) p.speed *= -1; }
         if (p.isCracking) p.crackTimer -= 0.02;
     });
-    
-    player.onIce = onIceThisFrame;
+    player.onIce = touchingIce;
     platforms = platforms.filter(p => p.type !== 'crumble' || p.crackTimer > 0);
 
-    items.forEach(item => { 
-        if (!item.collected) {
-            let dist = Math.sqrt(Math.pow(player.x - item.x, 2) + Math.pow(player.y - item.y, 2));
-            if (powerupStatus.Magnet && dist < 160) {
-                item.x += (player.x - item.x) * 0.2; item.y += (player.y - item.y) * 0.2;
-            }
-            if (dist < 35) {
-                item.collected = true; tokens += bgMultipliers[currentBGName] || 1; 
-                localStorage.setItem("parkourTokens", tokens); updateUI(); 
-            }
+    items.forEach(it => {
+        if (!it.collected) {
+            let d = Math.sqrt((player.x-it.x)**2 + (player.y-it.y)**2);
+            if (powerupStatus.Magnet && d < 160) { it.x += (player.x-it.x)*0.2; it.y += (player.y-it.y)*0.2; }
+            if (d < 35) { it.collected = true; tokens += bgMultipliers[currentBGName] || 1; localStorage.setItem("parkourTokens", tokens); updateUI(); }
         }
     });
     
     if (player.y < cameraY + 300) cameraY = player.y - 300;
     maxHeight = Math.max(maxHeight, Math.floor((500 - player.y) / 10));
     if (player.y > cameraY + 750) gameOver();
-    
-    draw(); 
-    animationId = requestAnimationFrame(update);
+    draw(); animationId = requestAnimationFrame(update);
 }
 
 function draw() {
@@ -252,67 +219,25 @@ function draw() {
     ctx.fillStyle = grad; ctx.fillRect(0, 0, canvas.width, canvas.height);
     
     ctx.save(); ctx.translate(0, -cameraY);
-    
-    // Particles
-    particles.forEach(p => {
-        ctx.globalAlpha = p.life; ctx.fillStyle = p.color;
-        ctx.fillRect(p.x, p.y, 4, 4);
-    });
+    particles.forEach(p => { ctx.globalAlpha = p.life; ctx.fillStyle = p.color; ctx.fillRect(p.x, p.y, 4, 4); });
     ctx.globalAlpha = 1.0;
-
-    // Wormholes
-    wormholes.forEach(wh => {
-        ctx.fillStyle = "#00ffff"; ctx.shadowBlur = 20; ctx.shadowColor = "#00ffff";
-        ctx.beginPath(); ctx.ellipse(wh.x + 20, wh.y + 20, 15, 25, 0, 0, Math.PI * 2); ctx.fill();
-        ctx.shadowBlur = 0;
-    });
-
-    // Platforms
-    platforms.forEach(p => {
-        if (p.type === 'tramp') ctx.fillStyle = "#ff4081"; 
-        else if (p.type === 'ice') ctx.fillStyle = "#b2ebf2"; 
-        else if (p.type === 'conveyor') ctx.fillStyle = "#bdbdbd";
-        else ctx.fillStyle = "#455a64";
-        ctx.fillRect(p.x, p.y, p.width, p.height);
-    });
+    wormholes.forEach(wh => { ctx.fillStyle = "#00ffff"; ctx.shadowBlur = 20; ctx.shadowColor = "#00ffff"; ctx.beginPath(); ctx.ellipse(wh.x + 20, wh.y + 20, 15, 25, 0, 0, Math.PI * 2); ctx.fill(); ctx.shadowBlur = 0; });
+    platforms.forEach(p => { ctx.fillStyle = (p.type === 'tramp') ? "#ff4081" : (p.type === 'ice' ? "#b2ebf2" : (p.type === 'conveyor' ? "#bdbdbd" : "#455a64")); ctx.fillRect(p.x, p.y, p.width, p.height); });
+    items.forEach(it => { if (!it.collected) { ctx.fillStyle = "#ffd600"; ctx.beginPath(); ctx.arc(it.x+5, it.y+5, 8, 0, Math.PI*2); ctx.fill(); } });
     
-    // Coins
-    items.forEach(item => { if (!item.collected) { ctx.fillStyle = "#ffd600"; ctx.beginPath(); ctx.arc(item.x+5, item.y+5, 8, 0, Math.PI*2); ctx.fill(); } });
-    
-    // --- PLAYER DRAWING ---
     if (selectedSkinId === 'skin-void') {
-        let p = Math.abs(Math.sin(Date.now() / 400));
-        ctx.fillStyle = "#000";
-        ctx.strokeStyle = `rgb(${120 * p}, 0, ${200 * p})`;
-        ctx.lineWidth = 4;
-        ctx.fillRect(player.x, player.y, 30, 30);
-        ctx.strokeRect(player.x, player.y, 30, 30);
+        let p = Math.abs(Math.sin(Date.now() / 400)); ctx.fillStyle = "#000"; ctx.strokeStyle = `rgb(${120*p}, 0, ${200*p})`; ctx.lineWidth = 4; ctx.fillRect(player.x, player.y, 30, 30); ctx.strokeRect(player.x, player.y, 30, 30);
     } else if (playerColor === 'rainbow') {
-        ctx.fillStyle = `hsl(${(Date.now() / 10) % 360}, 100%, 50%)`;
-        ctx.fillRect(player.x, player.y, 30, 30);
-    } else {
-        ctx.fillStyle = playerColor;
-        ctx.fillRect(player.x, player.y, 30, 30);
-    }
-    
+        ctx.fillStyle = `hsl(${(Date.now() / 10) % 360}, 100%, 50%)`; ctx.fillRect(player.x, player.y, 30, 30);
+    } else { ctx.fillStyle = playerColor; ctx.fillRect(player.x, player.y, 30, 30); }
     ctx.restore();
 }
 
-function gameOver() { 
-    gameActive = false; cancelAnimationFrame(animationId);
-    if (maxHeight > highScore) { highScore = maxHeight; localStorage.setItem("parkourHigh", highScore.toString()); }
-    mainMenu.style.display = "flex"; updateUI(); 
-}
+function gameOver() { gameActive = false; cancelAnimationFrame(animationId); if (maxHeight > highScore) { highScore = maxHeight; localStorage.setItem("parkourHigh", highScore.toString()); } mainMenu.style.display = "flex"; updateUI(); }
 
 const setupBtn = (id, act) => {
-    const btn = document.getElementById(id);
-    btn.ontouchstart = (e) => { 
-        e.preventDefault(); 
-        if (act === "Jump" && gameActive) {
-            if (!player.jumping) { player.velY = JUMP_FORCE; player.jumping = true; jumpCount = 1; }
-            else if (powerupStatus.DoubleJump && jumpCount < 2) { player.velY = JUMP_FORCE; jumpCount = 2; }
-        } else keys[config[act]] = true; 
-    };
+    const btn = document.getElementById(id); if (!btn) return;
+    btn.ontouchstart = (e) => { e.preventDefault(); if (act === "Jump" && gameActive) { if (!player.jumping) { player.velY = JUMP_FORCE; player.jumping = true; jumpCount = 1; } else if (powerupStatus.DoubleJump && jumpCount < 2) { player.velY = JUMP_FORCE; jumpCount = 2; } } else keys[config[act]] = true; };
     btn.ontouchend = () => keys[config[act]] = false;
 };
 setupBtn("leftBtn", "Left"); setupBtn("rightBtn", "Right"); setupBtn("jumpBtn", "Jump");
