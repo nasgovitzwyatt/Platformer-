@@ -2,262 +2,64 @@
     --primary: #ff5722; 
     --gold: #ffc107; 
     --bg-glass: rgba(255, 255, 255, 0.1);
-    --transition: 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 body {
-    display: flex; 
-    flex-direction: column; 
-    align-items: center; 
-    justify-content: center;
-    min-height: 100vh; 
-    margin: 0; 
-    background: #0a0a12; 
-    font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
-    overflow: hidden; 
-    touch-action: none;
-    color: white;
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    min-height: 100vh; margin: 0; background: #0a0a12; font-family: 'Segoe UI', sans-serif;
+    overflow: hidden; touch-action: none; color: white;
 }
 
-/* --- UI LAYER (Top Stats) --- */
+/* UI Stats - Pointer events NONE so they don't block clicks */
 #ui { 
-    position: absolute; 
-    top: 20px; 
-    display: flex; 
-    gap: 10px; 
-    z-index: 10; 
-    pointer-events: none; /* Allows clicking "through" the stats to the menu */
+    position: absolute; top: 20px; display: flex; gap: 10px; 
+    z-index: 10; pointer-events: none; 
 }
-
 #scoreBoard, #highScoreBoard, #tokenBoard { 
-    background: rgba(255, 255, 255, 0.05); 
-    color: white; 
-    padding: 8px 16px; 
-    border-radius: 12px; 
-    backdrop-filter: blur(10px); 
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    font-weight: 800;
-    box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+    background: rgba(255, 255, 255, 0.05); color: white; padding: 8px 16px; 
+    border-radius: 12px; backdrop-filter: blur(10px); border: 1px solid rgba(255, 255, 255, 0.1);
+    font-weight: 800; pointer-events: none;
 }
 
-#tokenBoard { 
-    background: rgba(255, 235, 59, 0.15); 
-    border-color: rgba(255, 235, 59, 0.3);
-    color: #ffeb3b;
-}
+/* Game Canvas */
+#game-container { position: relative; z-index: 1; }
+canvas { background: #000; border: 4px solid #1a1a1a; border-radius: 24px; }
 
-/* --- GAME CANVAS --- */
-#game-container { 
-    position: relative; 
-    z-index: 1; 
-}
-
-canvas { 
-    background: #000; 
-    border: 4px solid #1a1a1a; 
-    border-radius: 24px; 
-    box-shadow: 0 20px 60px rgba(0,0,0,0.8);
-}
-
-/* --- PROFESSIONAL MOBILE CONTROLS --- */
+/* Mobile Controls - Container is NONE, Buttons are AUTO */
 .controls { 
-    position: fixed; 
-    bottom: 30px; 
-    width: 90%; 
-    max-width: 450px;
-    display: flex; 
-    justify-content: space-between; 
-    align-items: flex-end;
-    z-index: 5; 
-    pointer-events: none; 
+    position: fixed; bottom: 30px; width: 90%; max-width: 450px;
+    display: flex; justify-content: space-between; align-items: flex-end;
+    z-index: 5; pointer-events: none; 
 }
-
-.dir-pad { 
-    display: flex; 
-    gap: 15px; 
-}
-
 .control-btn { 
-    pointer-events: auto; 
-    width: 75px; 
-    height: 75px; 
-    border-radius: 22px;
-    background: rgba(255, 255, 255, 0.08); 
-    color: white; 
-    border: 1px solid rgba(255, 255, 255, 0.15);
-    font-size: 24px; 
-    font-weight: bold;
-    backdrop-filter: blur(8px);
-    transition: var(--transition);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    user-select: none;
+    pointer-events: auto; width: 75px; height: 75px; border-radius: 22px;
+    background: rgba(255, 255, 255, 0.08); color: white; border: 1px solid rgba(255, 255, 255, 0.15);
+    font-size: 24px; font-weight: bold; backdrop-filter: blur(8px);
 }
+.jump-btn { width: 100px; height: 100px; background: var(--primary); border: none; }
 
-.control-btn:active {
-    background: rgba(255, 255, 255, 0.2);
-    transform: scale(0.92);
-}
-
-.jump-btn { 
-    width: 100px; 
-    height: 100px; 
-    background: var(--primary); 
-    border: none; 
-    box-shadow: 0 8px 25px rgba(255, 87, 34, 0.4);
-}
-
-/* --- VIBRANT MENU SCREENS --- */
+/* Menus - Highest Z-Index and Explicit pointer-events AUTO */
 .menu-screen {
-    position: fixed; 
-    inset: 0; 
-    background: rgba(5, 5, 12, 0.96);
-    backdrop-filter: blur(25px); 
-    display: flex; 
-    flex-direction: column;
-    align-items: center; 
-    justify-content: center; 
-    z-index: 2000; /* Highest Z-index to be on top */
+    position: fixed; inset: 0; background: rgba(5, 5, 12, 0.96);
+    backdrop-filter: blur(25px); display: flex; flex-direction: column;
+    align-items: center; justify-content: center; 
+    z-index: 9999; /* Ensure this is on top of everything */
+    color: white; pointer-events: auto; 
 }
 
-.game-title { 
-    font-size: 56px; 
-    text-align: center; 
-    margin-bottom: 40px; 
-    line-height: 0.85; 
-    font-weight: 900;
-    letter-spacing: -2px;
-}
-
-.highlight { 
-    color: var(--primary); 
-    text-shadow: 0 0 40px rgba(255, 87, 34, 0.6); 
-}
-
-.menu-buttons { 
-    display: flex; 
-    flex-direction: column; 
-    gap: 14px; 
-    width: 280px; 
-}
-
+.menu-buttons { display: flex; flex-direction: column; gap: 14px; width: 280px; }
 .menu-btn { 
-    padding: 18px; 
-    font-size: 18px; 
-    font-weight: 800; 
-    border-radius: 16px; 
-    border: 1px solid rgba(255, 255, 255, 0.1); 
-    cursor: pointer; 
-    background: #161625; 
-    color: white;
-    transition: var(--transition);
+    padding: 18px; font-size: 18px; font-weight: 800; border-radius: 16px; 
+    border: 1px solid rgba(255, 255, 255, 0.1); cursor: pointer; 
+    background: #161625; color: white; pointer-events: auto;
 }
+.menu-btn.primary { background: var(--primary); }
+.menu-btn.shop-gold { background: var(--gold); color: black; }
+.menu-btn.secondary { background: #252535; width: 200px; margin-top: 20px; }
 
-.menu-btn:hover {
-    background: #1c1c30;
-    transform: translateY(-2px);
-}
+.skin-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; padding: 20px; }
+.skin-btn { width: 68px; height: 68px; border-radius: 16px; border: 3px solid transparent; cursor: pointer; pointer-events: auto; }
+.skin-btn.locked { background: #1a1a1a !important; opacity: 0.3; cursor: not-allowed; }
+.skin-btn.selected { border-color: #39ff14; box-shadow: 0 0 20px rgba(57, 255, 20, 0.4); }
 
-.menu-btn.primary { 
-    background: var(--primary); 
-    border: none;
-    box-shadow: 0 10px 30px rgba(255, 87, 34, 0.3);
-}
-
-.menu-btn.shop-gold {
-    background: var(--gold);
-    color: #000;
-    border: none;
-}
-
-.menu-btn.secondary { 
-    background: #252535; 
-    margin-top: 20px; 
-    width: 200px; 
-}
-
-/* --- SHOP & SKINS GRID --- */
-.shop-grid-container { 
-    display: flex; 
-    gap: 20px; 
-    width: 90%; 
-    max-width: 600px; 
-}
-
-.shop-card { 
-    flex: 1; 
-    background: rgba(255, 255, 255, 0.03); 
-    padding: 24px; 
-    border-radius: 20px; 
-    border: 1px solid rgba(255, 255, 255, 0.08); 
-}
-
-.shop-item { 
-    display: flex; 
-    justify-content: space-between; 
-    align-items: center; 
-    background: rgba(255,255,255,0.05); 
-    border: 1px solid rgba(255,255,255,0.1); 
-    color: white; 
-    padding: 14px; 
-    border-radius: 12px; 
-    margin-bottom: 10px; 
-    width: 100%; 
-}
-
-.skin-grid { 
-    display: grid; 
-    grid-template-columns: repeat(4, 1fr); 
-    gap: 16px; 
-    padding: 20px; 
-    max-height: 50vh;
-    overflow-y: auto;
-}
-
-.skin-btn { 
-    width: 68px; 
-    height: 68px; 
-    border-radius: 16px; 
-    border: 3px solid transparent; 
-    cursor: pointer; 
-    transition: var(--transition);
-}
-
-.skin-btn.locked { 
-    background: #1a1a1a !important; 
-    opacity: 0.3; 
-    cursor: not-allowed; 
-    display: flex;
-    align-items: center;
-    justify-content: center;
-}
-
-.skin-btn.selected { 
-    border-color: #39ff14; 
-    box-shadow: 0 0 20px rgba(57, 255, 20, 0.4); 
-    transform: scale(1.05);
-}
-
-/* --- SETTINGS --- */
-.setting-item { 
-    display: flex; 
-    justify-content: space-between; 
-    align-items: center; 
-    width: 300px; 
-    background: rgba(255,255,255,0.05); 
-    padding: 16px; 
-    border-radius: 16px; 
-    margin-bottom: 12px; 
-    border: 1px solid rgba(255,255,255,0.08);
-}
-
-.bind-btn { 
-    background: #000; 
-    border: 2px solid var(--primary); 
-    color: var(--primary); 
-    padding: 8px 16px; 
-    border-radius: 10px; 
-    font-weight: 900; 
-    cursor: pointer; 
-}
+.bind-btn { background: #000; border: 2px solid var(--primary); color: var(--primary); padding: 8px 16px; border-radius: 10px; cursor: pointer; pointer-events: auto; }
