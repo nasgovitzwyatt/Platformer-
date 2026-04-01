@@ -70,7 +70,6 @@ function updateUI() {
     document.getElementById("highScoreBoard").innerText = `Best: ${highScore}m`;
     document.getElementById("scoreBoard").innerText = `Height: ${maxHeight}m`;
     
-    // BG Shop
     Object.keys(bgMultipliers).forEach(bg => {
         const p = document.getElementById(`price-${bg}`);
         if (p) {
@@ -81,7 +80,6 @@ function updateUI() {
         }
     });
 
-    // Powerup Shop
     const powButtons = document.querySelectorAll("#shopMenu .shop-card:nth-child(2) .shop-item");
     powButtons.forEach(btn => {
         const spanText = btn.querySelector("span").innerText.replace(" ", "");
@@ -91,7 +89,6 @@ function updateUI() {
         }
     });
 
-    // STRICT SKIN UNLOCK FIX
     const skinData = [
         {id: "skin-orange", req: 0}, {id: "skin-blue", req: 50}, {id: "skin-green", req: 100}, {id: "skin-purple", req: 150},
         {id: "skin-gold", req: 200}, {id: "skin-mint", req: 250}, {id: "skin-lava", req: 300}, {id: "skin-camo", req: 350},
@@ -185,11 +182,18 @@ function generatePlatforms() {
 function update() {
     if (!gameActive) return;
     mobileControls.style.pointerEvents = "auto";
+    
+    // --- RESET ICE STATE EVERY FRAME ---
+    player.onIce = false; 
+
     let speedMult = powerupStatus.SlowMo ? 0.7 : 1.0;
 
-    if (keys[config.Left] || keys["ArrowLeft"]) player.velX -= (player.onIce ? 0.3 : 1) * speedMult; 
-    if (keys[config.Right] || keys["ArrowRight"]) player.velX += (player.onIce ? 0.3 : 1) * speedMult;
-    player.velX *= (player.onIce ? 0.98 : 0.8); 
+    if (keys[config.Left] || keys["ArrowLeft"]) player.velX -= (player.onIce ? 0.3 : 1.2) * speedMult; 
+    if (keys[config.Right] || keys["ArrowRight"]) player.velX += (player.onIce ? 0.3 : 1.2) * speedMult;
+    
+    // Better Friction: 0.98 for ice (slide), 0.7 for normal (stop)
+    player.velX *= (player.onIce ? 0.98 : 0.7); 
+    
     player.x += player.velX; 
     player.y += player.velY * speedMult;
     player.velY += gravity * speedMult;
@@ -207,11 +211,15 @@ function update() {
     platforms.forEach(plat => {
         if (player.velY > 0 && player.y + 30 > plat.y && player.y + 30 < plat.y + 15 + player.velY && 
             player.x + 30 > plat.x && player.x < plat.x + plat.width) {
-            if (plat.type === 'tramp') { player.velY = BOUNCE_FORCE; player.jumping = true; jumpCount = 1; } 
-            else { 
+            if (plat.type === 'tramp') { 
+                player.velY = BOUNCE_FORCE; 
+                player.jumping = true; jumpCount = 1; 
+            } else { 
                 player.velY = 0; player.y = plat.y - 30; player.jumping = false; jumpCount = 0;
+                
+                // Only enable ice if the platform type is ice
+                if (plat.type === 'ice') player.onIce = true;
                 if (plat.type === 'conveyor') player.velX += plat.beltDir; 
-                if (plat.type === 'ice') player.onIce = true; 
                 if (plat.type === 'crumble') plat.isCracking = true; 
             }
         }
