@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Cube Parkour Pro: 1000m Challenge</title>
+    <title>Cube Parkour Pro</title>
     <link rel="stylesheet" href="styles.css">
 </head>
 <body>
@@ -13,7 +13,9 @@
         <div id="highScoreBoard">🏆 0m</div>
     </div>
 
-    <canvas id="gameCanvas" width="400" height="600"></canvas>
+    <div id="game-container">
+        <canvas id="gameCanvas" width="400" height="600"></canvas>
+    </div>
 
     <div class="controls" id="mobileControls">
         <div class="dir-pad">
@@ -39,26 +41,25 @@
             <div class="shop-card">
                 <h3>Backgrounds</h3>
                 <div class="shop-item-list scrollable">
-                    <button class="shop-item" onclick="buyItem('bg', 'White', 0)">White <span class="price" id="price-White">0</span></button>
-                    <button class="shop-item" onclick="buyItem('bg', 'Blue', 0)">Blue <span class="price" id="price-Blue">0</span></button>
-                    <button class="shop-item" onclick="buyItem('bg', 'Void', 300)">Void <span class="price" id="price-Void">300</span></button>
+                    <button class="shop-item" onclick="buyItem('bg', 'White', 0)">White <span class="price">0</span></button>
+                    <button class="shop-item" onclick="buyItem('bg', 'Blue', 0)">Blue <span class="price">0</span></button>
+                    <button class="shop-item" onclick="buyItem('bg', 'Void', 300)">Void <span class="price">300</span></button>
                 </div>
             </div>
             <div class="shop-card">
                 <h3>Upgrades</h3>
                 <div class="shop-item-list">
                     <button class="shop-item" onclick="buyItem('pow', 'DoubleJump', 100)">Double Jump</button>
-                    <button class="shop-item" onclick="buyItem('pow', 'Magnet', 150)">Magnet</button>
                 </div>
             </div>
         </div>
-        <button class="menu-btn secondary">BACK</button>
+        <button class="menu-btn secondary close-btn">BACK</button>
     </div>
 
     <div id="skinMenu" class="menu-screen" style="display: none;">
-        <h2 class="menu-title">SELECT SKIN</h2>
+        <h2 class="menu-title">SKINS</h2>
         <div class="skin-grid" id="skinGrid"></div>
-        <button class="menu-btn secondary">BACK</button>
+        <button class="menu-btn secondary close-btn">BACK</button>
     </div>
 
     <div id="settingsModal" class="menu-screen" style="display: none;">
@@ -68,7 +69,7 @@
             <div class="setting-item"><span>LEFT</span><button id="bindLeft" class="bind-btn">LEFT</button></div>
             <div class="setting-item"><span>RIGHT</span><button id="bindRight" class="bind-btn">RIGHT</button></div>
         </div>
-        <button class="menu-btn secondary">BACK</button>
+        <button class="menu-btn secondary close-btn">BACK</button>
     </div>
 
     <script src="script.js"></script>
