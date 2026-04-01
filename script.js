@@ -12,11 +12,9 @@ const bgMultipliers = {
     "Midnight": 2, "Space": 2.5, "Gold": 4, "Void": 10 
 };
 
-// --- DATA PERSISTENCE FIX ---
+// --- DATA PERSISTENCE ---
 let tokens = parseFloat(localStorage.getItem("parkourTokens")) || 0;
-// Force High Score to be a Number
 let highScore = parseInt(localStorage.getItem("parkourHigh")) || 0;
-
 let ownedItems = JSON.parse(localStorage.getItem("ownedItems")) || ["White", "Blue"];
 let currentBGName = localStorage.getItem("currentBGName") || "White";
 let playerColor = localStorage.getItem("playerColor") || "#ff5722";
@@ -31,7 +29,7 @@ let config = {
 let gravity = 0.5, cameraY = 0, maxHeight = 0, gameActive = false;
 const JUMP_FORCE = -13.5, BOUNCE_FORCE = -22;
 const player = { x: 180, y: 500, width: 30, height: 30, velX: 0, velY: 0, jumping: false, onIce: false, conveyorForce: 0 };
-let platforms = [], items = [], keys = {};
+let platforms = [], items = [], keys = {}, wormholes = [];
 
 // --- NAVIGATION ---
 document.getElementById("startBtn").onclick = (e) => { e.stopPropagation(); init(); };
@@ -56,14 +54,11 @@ function buyItem(type, name, price) {
 }
 
 function updateUI() {
-    // Ensure we are working with numbers
     highScore = parseInt(localStorage.getItem("parkourHigh")) || 0;
-    
     document.getElementById("tokenBoard").innerText = `Tokens: ${Math.floor(tokens)}`;
     document.getElementById("highScoreBoard").innerText = `Best: ${highScore}m`;
     document.getElementById("scoreBoard").innerText = `Height: ${maxHeight}m`;
     
-    // Background Shop Update
     Object.keys(bgMultipliers).forEach(bg => {
         const btn = document.getElementById(`btn-bg-${bg}`), 
               priceSpan = document.getElementById(`price-${bg}`);
@@ -75,7 +70,6 @@ function updateUI() {
         }
     });
 
-    // --- SKIN UNLOCK SYSTEM FIX ---
     const skinData = [
         {id: "skin-orange", req: 0}, {id: "skin-blue", req: 50}, {id: "skin-green", req: 100}, {id: "skin-purple", req: 150},
         {id: "skin-gold", req: 200}, {id: "skin-mint", req: 250}, {id: "skin-lava", req: 300}, {id: "skin-camo", req: 350},
@@ -100,16 +94,13 @@ function updateUI() {
 
 function changeSkin(color, req, id) {
     if (highScore >= req) { 
-        playerColor = color; 
-        selectedSkinId = id; 
+        playerColor = color; selectedSkinId = id; 
         localStorage.setItem("playerColor", color); 
         localStorage.setItem("selectedSkinId", id); 
-        updateUI(); 
-        skinMenu.style.display = "none"; 
+        updateUI(); skinMenu.style.display = "none"; 
     }
 }
 
-// --- SETTINGS BINDING ---
 let bindingAction = null;
 const bindButtons = { Jump: "bindJump", Left: "bindLeft", Right: "bindRight" };
 Object.keys(bindButtons).forEach(action => {
@@ -128,8 +119,7 @@ window.addEventListener("keydown", e => {
         return;
     }
     if ((e.code === config.Jump || e.code === "Space" || e.code === "ArrowUp") && !player.jumping && gameActive) { 
-        player.velY = JUMP_FORCE; 
-        player.jumping = true; 
+        player.velY = JUMP_FORCE; player.jumping = true; 
     }
     keys[e.code] = true;
 });
@@ -138,17 +128,13 @@ window.addEventListener("keyup", e => keys[e.code] = false);
 // --- GAME LOGIC ---
 function init() {
     player.x = 180; player.y = 500; player.velX = 0; player.velY = 0; 
-    cameraY = 0; maxHeight = 0; // Reset session score
+    cameraY = 0; maxHeight = 0; 
     platforms = [{ x: 0, y: 580, width: 400, height: 20, type: 'normal' }]; 
-    items = [];
+    items = []; wormholes = [];
     generatePlatforms(); 
     gameActive = true;
-    
     mobileControls.style.pointerEvents = "none";
-    mainMenu.style.display = "none"; 
-    shopMenu.style.display = "none"; 
-    settingsModal.style.display = "none";
-    
+    mainMenu.style.display = "none"; shopMenu.style.display = "none"; settingsModal.style.display = "none";
     updateUI(); 
     update();
 }
@@ -160,6 +146,13 @@ function generatePlatforms() {
         let gapModifier = Math.min(55, heightM / 18);
         lastY -= (90 + gapModifier + Math.random() * 40);
         let type = 'normal', roll = Math.random();
+
+        // RARE WORMHOLE SPAWN (1%)
+        if (roll < 0.01) {
+            wormholes.push({ x: Math.random() * 340, y: lastY, width: 40, height: 40 });
+            continue; 
+        }
+
         let normalChance = Math.max(0.3, 0.65 - (heightM / 1800));
         if (roll > normalChance) {
             let subRoll = Math.random();
@@ -185,29 +178,27 @@ function update() {
     
     if (keys[config.Left] || keys["ArrowLeft"]) player.velX -= player.onIce ? 0.3 : 1; 
     if (keys[config.Right] || keys["ArrowRight"]) player.velX += player.onIce ? 0.3 : 1;
-    
-    player.velX *= player.onIce ? 0.98 : 0.8; 
-    player.velX += player.conveyorForce; 
-    player.velY += gravity; 
-    player.x += player.velX; 
-    player.y += player.velY;
-    
-    if (player.x < -30) player.x = canvas.width; 
-    if (player.x > canvas.width) player.x = -30;
-    
-    player.conveyorForce = 0; 
-    player.onIce = false;
+    player.velX *= player.onIce ? 0.98 : 0.8; player.velX += player.conveyorForce; player.velY += gravity; player.x += player.velX; player.y += player.velY;
+    if (player.x < -30) player.x = canvas.width; if (player.x > canvas.width) player.x = -30;
+    player.conveyorForce = 0; player.onIce = false;
+
+    // WORMHOLE COLLISION
+    wormholes.forEach((wh, index) => {
+        if (Math.abs(player.x - wh.x) < 35 && Math.abs(player.y - wh.y) < 35) {
+            player.y -= 1500;
+            cameraY -= 1500;
+            // Spawn safety platform at destination
+            platforms.push({ x: player.x - 20, y: player.y + 50, width: 100, height: 12, type: 'normal', speed: 0, crackTimer: 1.0, isCracking: false });
+            wormholes.splice(index, 1);
+        }
+    });
 
     platforms.forEach(plat => {
         if (player.velY > 0 && player.y + 30 > plat.y && player.y + 30 < plat.y + 15 + player.velY && 
             player.x + 30 > plat.x && player.x < plat.x + plat.width) {
-            if (plat.type === 'tramp') { 
-                player.velY = BOUNCE_FORCE; 
-                player.jumping = true; 
-            } else { 
-                player.velY = 0; 
-                player.y = plat.y - 30; 
-                player.jumping = false; 
+            if (plat.type === 'tramp') { player.velY = BOUNCE_FORCE; player.jumping = true; } 
+            else { 
+                player.velY = 0; player.y = plat.y - 30; player.jumping = false; 
                 if (plat.type === 'conveyor') player.conveyorForce = plat.beltDir; 
                 if (plat.type === 'ice') player.onIce = true; 
                 if (plat.type === 'crumble') plat.isCracking = true; 
@@ -218,26 +209,13 @@ function update() {
     });
     
     platforms = platforms.filter(p => p.type !== 'crumble' || p.crackTimer > 0);
-    
-    items.forEach(item => { 
-        if (!item.collected && Math.abs(player.x - item.x) < 30 && Math.abs(player.y - item.y) < 30) { 
-            item.collected = true; 
-            let multi = bgMultipliers[currentBGName] || 1;
-            tokens += (1 * multi); 
-            localStorage.setItem("parkourTokens", tokens);
-            updateUI(); 
-        } 
-    });
+    items.forEach(item => { if (!item.collected && Math.abs(player.x - item.x) < 30 && Math.abs(player.y - item.y) < 30) { 
+        item.collected = true; tokens += bgMultipliers[currentBGName] || 1; localStorage.setItem("parkourTokens", tokens); updateUI(); 
+    }});
     
     if (player.y < cameraY + 300) cameraY = player.y - 300;
-    
-    // Live Score Calculation
     let currentHeight = Math.max(0, Math.floor((500 - player.y) / 10));
-    if (currentHeight > maxHeight) { 
-        maxHeight = currentHeight; 
-        document.getElementById("scoreBoard").innerText = `Height: ${maxHeight}m`; 
-    }
-    
+    if (currentHeight > maxHeight) { maxHeight = currentHeight; document.getElementById("scoreBoard").innerText = `Height: ${maxHeight}m`; }
     if (player.y > cameraY + 750) gameOver();
     draw(); 
     requestAnimationFrame(update);
@@ -253,13 +231,19 @@ function draw() {
     else if (currentBGName === "Space") { grad.addColorStop(0, "#0f0c29"); grad.addColorStop(1, "#24243e"); }
     else if (currentBGName === "Gold") { grad.addColorStop(0, "#bf953f"); grad.addColorStop(1, "#fcf6ba"); }
     else if (currentBGName === "Void") { grad.addColorStop(0, "#000"); grad.addColorStop(1, "#111"); }
+    ctx.fillStyle = grad; ctx.fillRect(0, 0, canvas.width, canvas.height);
     
-    ctx.fillStyle = grad; 
-    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    ctx.save(); ctx.translate(0, -cameraY);
     
-    ctx.save(); 
-    ctx.translate(0, -cameraY);
-    
+    // DRAW WORMHOLES
+    wormholes.forEach(wh => {
+        let pulse = 5 + Math.sin(Date.now() / 100) * 5;
+        ctx.fillStyle = "#00ffff"; ctx.shadowBlur = 15 + pulse; ctx.shadowColor = "#00ffff";
+        ctx.beginPath(); ctx.ellipse(wh.x + 20, wh.y + 20, 15 + pulse/2, 20 + pulse, 0, 0, Math.PI * 2); ctx.fill();
+        ctx.fillStyle = "white"; ctx.beginPath(); ctx.ellipse(wh.x + 20, wh.y + 20, 8, 12, 0, 0, Math.PI * 2); ctx.fill();
+        ctx.shadowBlur = 0;
+    });
+
     platforms.forEach(p => {
         if (p.type === 'tramp') ctx.fillStyle = "#e91e63"; 
         else if (p.type === 'conveyor') ctx.fillStyle = "#757575"; 
@@ -268,10 +252,8 @@ function draw() {
         else ctx.fillStyle = "#455a64";
         ctx.fillRect(p.x, p.y, p.width, p.height);
     });
-    
     items.forEach(item => { if (!item.collected) { ctx.fillStyle = "#ffeb3b"; ctx.beginPath(); ctx.arc(item.x+5, item.y+5, 8, 0, Math.PI*2); ctx.fill(); } });
     
-    // Skin Rendering Logic
     if (playerColor === 'rainbow') { ctx.fillStyle = `hsl(${(Date.now() / 10) % 360}, 100%, 50%)`; }
     else if (playerColor === 'lava') { ctx.fillStyle = "#d84315"; ctx.shadowBlur = 10; ctx.shadowColor = "#ffeb3b"; }
     else if (playerColor === 'electric') { ctx.fillStyle = "#00d2ff"; ctx.shadowBlur = 15; ctx.shadowColor = "#fff"; }
@@ -285,30 +267,14 @@ function draw() {
 
 function gameOver() { 
     gameActive = false; 
-    
-    // Update High Score if needed
-    if (maxHeight > highScore) { 
-        highScore = maxHeight; 
-        localStorage.setItem("parkourHigh", highScore.toString()); 
-    }
-    
-    mainMenu.style.display = "flex"; 
-    mobileControls.style.pointerEvents = "none";
-    updateUI(); 
+    if (maxHeight > highScore) { highScore = maxHeight; localStorage.setItem("parkourHigh", highScore.toString()); }
+    mainMenu.style.display = "flex"; mobileControls.style.pointerEvents = "none"; updateUI(); 
 }
 
 const setupBtn = (id, act) => {
     const btn = document.getElementById(id);
-    btn.ontouchstart = (e) => { 
-        e.preventDefault(); 
-        if (act === "Jump") { 
-            if (!player.jumping && gameActive) { player.velY = JUMP_FORCE; player.jumping = true; } 
-        } else keys[config[act]] = true; 
-    };
+    btn.ontouchstart = (e) => { e.preventDefault(); if (act === "Jump") { if (!player.jumping && gameActive) { player.velY = JUMP_FORCE; player.jumping = true; } } else keys[config[act]] = true; };
     btn.ontouchend = () => keys[config[act]] = false;
 };
-
 setupBtn("leftBtn", "Left"); setupBtn("rightBtn", "Right"); setupBtn("jumpBtn", "Jump");
-
-// Initial UI Call
 updateUI();
