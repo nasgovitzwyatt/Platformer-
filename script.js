@@ -26,18 +26,15 @@ let config = {
     Right: localStorage.getItem("keyRight") || "ArrowRight" 
 };
 
-// --- POWERUP STATE (Modified for Toggling) ---
+// --- POWERUP STATE ---
 let powerupStatus = JSON.parse(localStorage.getItem("powerupStatus")) || {
-    DoubleJump: false,
-    Magnet: false,
-    SlowMo: false
+    DoubleJump: false, Magnet: false, SlowMo: false
 };
 
-let jumpCount = 0;
 let gravity = 0.5, cameraY = 0, maxHeight = 0, gameActive = false, animationId;
 const JUMP_FORCE = -13.5, BOUNCE_FORCE = -22;
 const player = { x: 180, y: 500, width: 30, height: 30, velX: 0, velY: 0, jumping: false, onIce: false, conveyorForce: 0 };
-let platforms = [], items = [], keys = {}, wormholes = [];
+let platforms = [], items = [], keys = {}, wormholes = [], jumpCount = 0;
 
 // --- NAVIGATION ---
 document.getElementById("startBtn").onclick = (e) => { e.stopPropagation(); init(); };
@@ -49,10 +46,8 @@ document.getElementById("backToMenu").onclick = (e) => { e.stopPropagation(); se
 
 function buyItem(type, name, price) {
     if (ownedItems.includes(name)) { 
-        if (type === 'bg') {
-            currentBGName = name;
-        } else if (type === 'pow') {
-            // TOGGLE POWERUP ON/OFF
+        if (type === 'bg') currentBGName = name;
+        else if (type === 'pow') {
             powerupStatus[name] = !powerupStatus[name];
             localStorage.setItem("powerupStatus", JSON.stringify(powerupStatus));
         }
@@ -75,7 +70,7 @@ function updateUI() {
     document.getElementById("highScoreBoard").innerText = `Best: ${highScore}m`;
     document.getElementById("scoreBoard").innerText = `Height: ${maxHeight}m`;
     
-    // Background Buttons
+    // BG Shop
     Object.keys(bgMultipliers).forEach(bg => {
         const p = document.getElementById(`price-${bg}`);
         if (p) {
@@ -86,7 +81,7 @@ function updateUI() {
         }
     });
 
-    // Powerup Toggling Buttons
+    // Powerup Shop
     const powButtons = document.querySelectorAll("#shopMenu .shop-card:nth-child(2) .shop-item");
     powButtons.forEach(btn => {
         const spanText = btn.querySelector("span").innerText.replace(" ", "");
@@ -95,10 +90,33 @@ function updateUI() {
             btn.classList.toggle("selected", powerupStatus[spanText]);
         }
     });
+
+    // STRICT SKIN UNLOCK FIX
+    const skinData = [
+        {id: "skin-orange", req: 0}, {id: "skin-blue", req: 50}, {id: "skin-green", req: 100}, {id: "skin-purple", req: 150},
+        {id: "skin-gold", req: 200}, {id: "skin-mint", req: 250}, {id: "skin-lava", req: 300}, {id: "skin-camo", req: 350},
+        {id: "skin-ghost", req: 400}, {id: "skin-neon", req: 450}, {id: "skin-rainbow", req: 500}, {id: "skin-diamond", req: 600},
+        {id: "skin-ruby", req: 700}, {id: "skin-emerald", req: 800}, {id: "skin-electric", req: 900}, {id: "skin-void", req: 1000}
+    ];
+
+    skinData.forEach(s => {
+        const btn = document.getElementById(s.id);
+        if (btn) {
+            if (Number(highScore) >= s.req) { 
+                btn.classList.remove("locked"); 
+                btn.innerText = (selectedSkinId === s.id) ? "ACTIVE" : "SELECT"; 
+                btn.classList.toggle("selected", selectedSkinId === s.id); 
+            } else { 
+                btn.classList.add("locked"); 
+                btn.innerText = "🔒 " + s.req + "m"; 
+                btn.classList.remove("selected");
+            }
+        }
+    });
 }
 
 function changeSkin(color, req, id) {
-    if (highScore >= req) { 
+    if (Number(highScore) >= req) { 
         playerColor = color; selectedSkinId = id; 
         localStorage.setItem("playerColor", color); 
         localStorage.setItem("selectedSkinId", id); 
@@ -107,14 +125,11 @@ function changeSkin(color, req, id) {
 }
 
 window.addEventListener("keydown", e => {
-    if ((e.code === config.Jump || e.code === "Space" || e.code === "ArrowUp") && gameActive) { 
+    if ((e.code === config.Jump || e.code === "Space") && gameActive) { 
         if (!player.jumping) {
-            player.velY = JUMP_FORCE;
-            player.jumping = true;
-            jumpCount = 1;
+            player.velY = JUMP_FORCE; player.jumping = true; jumpCount = 1;
         } else if (powerupStatus.DoubleJump && jumpCount < 2) {
-            player.velY = JUMP_FORCE;
-            jumpCount = 2;
+            player.velY = JUMP_FORCE; jumpCount = 2;
         }
     }
     keys[e.code] = true;
@@ -122,20 +137,12 @@ window.addEventListener("keydown", e => {
 window.addEventListener("keyup", e => keys[e.code] = false);
 
 function init() {
-    // STOP PREVIOUS LOOP TO PREVENT CLONES
     cancelAnimationFrame(animationId);
-
-    // RESET ALL ARRAYS
-    platforms = [];
-    items = [];
-    wormholes = [];
-    
+    platforms = []; items = []; wormholes = [];
     player.x = 180; player.y = 500; player.velX = 0; player.velY = 0; 
     cameraY = 0; maxHeight = 0; jumpCount = 0;
     
-    // STARTING PLATFORM
     platforms.push({ x: 0, y: 580, width: 400, height: 20, type: 'normal', speed: 0, crackTimer: 1.0, isCracking: false }); 
-    
     generatePlatforms(); 
     gameActive = true;
     mobileControls.style.pointerEvents = "none";
@@ -168,10 +175,8 @@ function generatePlatforms() {
         }
         let moveSpeed = (type !== 'conveyor' && Math.random() < 0.25) ? (1.5 + (heightM/600)) : 0;
         platforms.push({ 
-            x: Math.random() * 300, y: lastY, 
-            width: Math.max(45, 80 - (heightM / 30)), 
-            height: 12, type: type, speed: moveSpeed, 
-            beltDir: 1.5, crackTimer: 1.0, isCracking: false 
+            x: Math.random() * 300, y: lastY, width: Math.max(45, 80 - (heightM / 30)), 
+            height: 12, type: type, speed: moveSpeed, beltDir: 1.5, crackTimer: 1.0, isCracking: false 
         });
         if (Math.random() < 0.3) items.push({ x: platforms[platforms.length-1].x + 35, y: lastY - 25, collected: false });
     }
@@ -180,21 +185,17 @@ function generatePlatforms() {
 function update() {
     if (!gameActive) return;
     mobileControls.style.pointerEvents = "auto";
-    
     let speedMult = powerupStatus.SlowMo ? 0.7 : 1.0;
 
     if (keys[config.Left] || keys["ArrowLeft"]) player.velX -= (player.onIce ? 0.3 : 1) * speedMult; 
     if (keys[config.Right] || keys["ArrowRight"]) player.velX += (player.onIce ? 0.3 : 1) * speedMult;
     player.velX *= (player.onIce ? 0.98 : 0.8); 
-    
     player.x += player.velX; 
     player.y += player.velY * speedMult;
     player.velY += gravity * speedMult;
     
     if (player.x < -30) player.x = canvas.width; if (player.x > canvas.width) player.x = -30;
-    player.conveyorForce = 0; player.onIce = false;
 
-    // WORMHOLES
     wormholes.forEach((wh, index) => {
         if (Math.abs(player.x - wh.x) < 35 && Math.abs(player.y - wh.y) < 35) {
             player.y -= 1500; cameraY -= 1500;
@@ -203,16 +204,13 @@ function update() {
         }
     });
 
-    // PLATFORMS
     platforms.forEach(plat => {
         if (player.velY > 0 && player.y + 30 > plat.y && player.y + 30 < plat.y + 15 + player.velY && 
             player.x + 30 > plat.x && player.x < plat.x + plat.width) {
-            if (plat.type === 'tramp') { 
-                player.velY = BOUNCE_FORCE; 
-                player.jumping = true; jumpCount = 1; 
-            } else { 
+            if (plat.type === 'tramp') { player.velY = BOUNCE_FORCE; player.jumping = true; jumpCount = 1; } 
+            else { 
                 player.velY = 0; player.y = plat.y - 30; player.jumping = false; jumpCount = 0;
-                if (plat.type === 'conveyor') player.conveyorForce = plat.beltDir; 
+                if (plat.type === 'conveyor') player.velX += plat.beltDir; 
                 if (plat.type === 'ice') player.onIce = true; 
                 if (plat.type === 'crumble') plat.isCracking = true; 
             }
@@ -223,26 +221,22 @@ function update() {
     
     platforms = platforms.filter(p => p.type !== 'crumble' || p.crackTimer > 0);
 
-    // MAGNET
     items.forEach(item => { 
         if (!item.collected) {
             let dist = Math.sqrt(Math.pow(player.x - item.x, 2) + Math.pow(player.y - item.y, 2));
             if (powerupStatus.Magnet && dist < 150) {
-                item.x += (player.x - item.x) * 0.1;
-                item.y += (player.y - item.y) * 0.1;
+                item.x += (player.x - item.x) * 0.1; item.y += (player.y - item.y) * 0.1;
             }
             if (dist < 35) {
-                item.collected = true; 
-                tokens += bgMultipliers[currentBGName] || 1; 
-                localStorage.setItem("parkourTokens", tokens); 
-                updateUI(); 
+                item.collected = true; tokens += bgMultipliers[currentBGName] || 1; 
+                localStorage.setItem("parkourTokens", tokens); updateUI(); 
             }
         }
     });
     
     if (player.y < cameraY + 300) cameraY = player.y - 300;
-    let currentHeight = Math.max(0, Math.floor((500 - player.y) / 10));
-    if (currentHeight > maxHeight) { maxHeight = currentHeight; document.getElementById("scoreBoard").innerText = `Height: ${maxHeight}m`; }
+    let ch = Math.max(0, Math.floor((500 - player.y) / 10));
+    if (ch > maxHeight) { maxHeight = ch; document.getElementById("scoreBoard").innerText = `Height: ${maxHeight}m`; }
     if (player.y > cameraY + 750) gameOver();
     
     draw(); 
@@ -250,11 +244,8 @@ function update() {
 }
 
 function draw() {
-    // CLEAR CANVAS EVERY FRAME
     ctx.clearRect(0,0, canvas.width, canvas.height);
-
     let grad = ctx.createLinearGradient(0, 0, 0, canvas.height);
-    // Gradient choices based on currentBGName...
     if (currentBGName === "White") { grad.addColorStop(0, "#fff"); grad.addColorStop(1, "#ddd"); }
     else if (currentBGName === "Blue") { grad.addColorStop(0, "#4facfe"); grad.addColorStop(1, "#00f2fe"); }
     else if (currentBGName === "Forest") { grad.addColorStop(0, "#134e5e"); grad.addColorStop(1, "#71b280"); }
@@ -263,11 +254,9 @@ function draw() {
     else if (currentBGName === "Space") { grad.addColorStop(0, "#0f0c29"); grad.addColorStop(1, "#24243e"); }
     else if (currentBGName === "Gold") { grad.addColorStop(0, "#bf953f"); grad.addColorStop(1, "#fcf6ba"); }
     else if (currentBGName === "Void") { grad.addColorStop(0, "#000"); grad.addColorStop(1, "#111"); }
-    ctx.fillStyle = grad; 
-    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    ctx.fillStyle = grad; ctx.fillRect(0, 0, canvas.width, canvas.height);
     
-    ctx.save(); 
-    ctx.translate(0, -cameraY);
+    ctx.save(); ctx.translate(0, -cameraY);
     
     wormholes.forEach(wh => {
         let pulse = 5 + Math.sin(Date.now() / 100) * 5;
@@ -294,8 +283,7 @@ function draw() {
 }
 
 function gameOver() { 
-    gameActive = false; 
-    cancelAnimationFrame(animationId);
+    gameActive = false; cancelAnimationFrame(animationId);
     if (maxHeight > highScore) { highScore = maxHeight; localStorage.setItem("parkourHigh", highScore.toString()); }
     mainMenu.style.display = "flex"; updateUI(); 
 }
