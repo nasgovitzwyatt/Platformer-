@@ -137,7 +137,7 @@ function init() {
     cancelAnimationFrame(animationId);
     platforms = []; items = []; wormholes = [];
     player.x = 180; player.y = 500; player.velX = 0; player.velY = 0; 
-    cameraY = 0; maxHeight = 0; jumpCount = 0;
+    cameraY = 0; maxHeight = 0; jumpCount = 0; player.onIce = false;
     
     platforms.push({ x: 0, y: 580, width: 400, height: 20, type: 'normal', speed: 0, crackTimer: 1.0, isCracking: false }); 
     generatePlatforms(); 
@@ -150,13 +150,14 @@ function init() {
 
 function generatePlatforms() {
     let lastY = platforms[0].y;
-    for (let i = 0; i < 500; i++) {
+    for (let i = 0; i < 800; i++) { // Increased generation range
         let heightM = (500 - lastY) / 10;
         let gapModifier = Math.min(55, heightM / 18);
         lastY -= (90 + gapModifier + Math.random() * 40);
         let roll = Math.random();
 
-        if (roll < 0.01) {
+        // 2% WORMHOLE SPAWN
+        if (roll < 0.02) {
             wormholes.push({ x: Math.random() * 340, y: lastY, width: 40, height: 40 });
             continue; 
         }
@@ -183,6 +184,7 @@ function update() {
     if (!gameActive) return;
     mobileControls.style.pointerEvents = "auto";
     
+    // Ice state only persists while grounded
     if (player.velY !== 0) player.onIce = false; 
 
     let timeScale = powerupStatus.SlowMo ? 0.7 : 1.0;
@@ -195,6 +197,7 @@ function update() {
         player.velX += (player.onIce ? 0.15 : horizontalAcc);
     }
     
+    // ICE PHYSICS: 0.995 friction makes you slide for a long time
     let friction = player.onIce ? 0.995 : 0.7;
     player.velX *= friction; 
     
@@ -207,6 +210,7 @@ function update() {
     
     if (player.x < -30) player.x = canvas.width; if (player.x > canvas.width) player.x = -30;
 
+    // WORMHOLE COLLISION
     wormholes.forEach((wh, index) => {
         if (Math.abs(player.x - wh.x) < 35 && Math.abs(player.y - wh.y) < 35) {
             player.y -= 1500; cameraY -= 1500;
@@ -225,7 +229,10 @@ function update() {
             } 
             else { 
                 player.velY = 0; player.y = plat.y - 30; player.jumping = false; jumpCount = 0;
+                
+                // Set ice state based on platform type
                 player.onIce = (plat.type === 'ice');
+                
                 if (plat.type === 'conveyor') player.velX += (plat.beltDir * 3.5); 
                 if (plat.type === 'crumble') plat.isCracking = true; 
             }
@@ -276,6 +283,7 @@ function draw() {
     
     ctx.save(); ctx.translate(0, -cameraY);
     
+    // Wormhole Rendering
     wormholes.forEach(wh => {
         let pulse = 5 + Math.sin(Date.now() / 100) * 5;
         ctx.fillStyle = "#00ffff"; ctx.shadowBlur = 15 + pulse; ctx.shadowColor = "#00ffff";
