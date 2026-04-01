@@ -18,7 +18,7 @@ const JUMP_FORCE = -13.5, BOUNCE_FORCE = -22;
 const player = { x: 180, y: 500, width: 30, height: 30, velX: 0, velY: 0, jumping: false, onIce: false, conveyorForce: 0 };
 let platforms = [], items = [], keys = {};
 
-// Navigation
+// Navigation with Click Fix
 document.getElementById("startBtn").onclick = (e) => { e.stopPropagation(); init(); };
 document.getElementById("shopBtn").onclick = (e) => { e.stopPropagation(); mainMenu.style.display = "none"; shopMenu.style.display = "flex"; updateUI(); };
 document.getElementById("closeShop").onclick = (e) => { e.stopPropagation(); shopMenu.style.display = "none"; mainMenu.style.display = "flex"; };
@@ -37,7 +37,6 @@ function updateUI() {
     document.getElementById("tokenBoard").innerText = `Tokens: ${tokens}`;
     document.getElementById("highScoreBoard").innerText = `Best: ${highScore}m`;
     
-    // Background UI
     ["White", "Blue", "Sunset", "Space"].forEach(bg => {
         const btn = document.getElementById(`btn-bg-${bg}`), priceSpan = document.getElementById(`price-${bg}`);
         if (btn) {
@@ -46,7 +45,6 @@ function updateUI() {
         }
     });
 
-    // Skin UI
     const skinData = [
         {id: "skin-orange", req: 0}, {id: "skin-blue", req: 50}, {id: "skin-green", req: 100}, {id: "skin-purple", req: 150},
         {id: "skin-gold", req: 200}, {id: "skin-mint", req: 250}, {id: "skin-lava", req: 300}, {id: "skin-camo", req: 350},
@@ -78,7 +76,7 @@ Object.keys(bindButtons).forEach(action => {
 window.addEventListener("keydown", e => {
     if (bindingAction) {
         e.preventDefault(); config[bindingAction] = e.code; localStorage.setItem("key" + bindingAction, e.code);
-        document.getElementById(bindButtons[bindingAction]).innerText = e.code.replace("Key", "");
+        document.getElementById(bindButtons[bindingAction]).innerText = e.code.replace("Key", "").replace("Arrow", "");
         document.getElementById(bindButtons[bindingAction]).classList.remove("waiting");
         bindingAction = null; return;
     }
@@ -91,10 +89,7 @@ function init() {
     player.x = 180; player.y = 500; player.velX = 0; player.velY = 0; cameraY = 0; maxHeight = 0;
     platforms = [{ x: 0, y: 580, width: 400, height: 20, type: 'normal' }]; items = [];
     generatePlatforms(); gameActive = true;
-    
-    // Deactivate mobile buttons while in menu
     mobileControls.style.pointerEvents = "none";
-    
     mainMenu.style.display = "none"; shopMenu.style.display = "none"; settingsModal.style.display = "none";
     updateUI(); update();
 }
@@ -114,7 +109,8 @@ function generatePlatforms() {
             else if (subRoll < 0.75) type = 'crumble'; 
             else type = 'ice';
         }
-        let moveSpeed = (type === 'tramp' || type === 'crumble' || (type === 'normal' && Math.random() < 0.3)) ? (1.5 + (heightM/500)) : 0;
+        // Rules: Ice, Tramp, and Crumble can move.
+        let moveSpeed = (type !== 'conveyor' && Math.random() < 0.25) ? (1.5 + (heightM/500)) : 0;
         platforms.push({ x: Math.random() * 300, y: lastY, width: Math.max(40, 80 - (heightM / 25)), height: 12, type: type, speed: moveSpeed, beltDir: 1.5, crackTimer: 1.0, isCracking: false });
         if (Math.random() < 0.3) items.push({ x: platforms[platforms.length-1].x + 35, y: lastY - 25, collected: false });
     }
@@ -122,8 +118,7 @@ function generatePlatforms() {
 
 function update() {
     if (!gameActive) return;
-    mobileControls.style.pointerEvents = "auto"; // Reactivate buttons when game starts
-    
+    mobileControls.style.pointerEvents = "auto";
     if (keys[config.Left] || keys["ArrowLeft"]) player.velX -= player.onIce ? 0.3 : 1; 
     if (keys[config.Right] || keys["ArrowRight"]) player.velX += player.onIce ? 0.3 : 1;
     player.velX *= player.onIce ? 0.98 : 0.8; player.velX += player.conveyorForce; player.velY += gravity; player.x += player.velX; player.y += player.velY;
@@ -133,7 +128,12 @@ function update() {
     platforms.forEach(plat => {
         if (player.velY > 0 && player.y + 30 > plat.y && player.y + 30 < plat.y + 15 + player.velY && player.x + 30 > plat.x && player.x < plat.x + plat.width) {
             if (plat.type === 'tramp') { player.velY = BOUNCE_FORCE; player.jumping = true; }
-            else { player.velY = 0; player.y = plat.y - 30; player.jumping = false; if (plat.type === 'conveyor') player.conveyorForce = plat.beltDir; if (plat.type === 'ice') player.onIce = true; if (plat.type === 'crumble') plat.isCracking = true; }
+            else { 
+                player.velY = 0; player.y = plat.y - 30; player.jumping = false; 
+                if (plat.type === 'conveyor') player.conveyorForce = plat.beltDir;
+                if (plat.type === 'ice') player.onIce = true;
+                if (plat.type === 'crumble') plat.isCracking = true;
+            }
         }
         if (plat.isCracking) plat.crackTimer -= 0.02;
         if (plat.speed) { plat.x += plat.speed; if (plat.x < 0 || plat.x > 320) plat.speed *= -1; }
@@ -160,18 +160,13 @@ function draw() {
         ctx.fillRect(p.x, p.y, p.width, p.height);
     });
     items.forEach(item => { if (!item.collected) { ctx.fillStyle = "#ffeb3b"; ctx.beginPath(); ctx.arc(item.x+5, item.y+5, 8, 0, Math.PI*2); ctx.fill(); } });
+    
     if (playerColor === 'rainbow') ctx.fillStyle = `hsl(${(Date.now() / 10) % 360}, 100%, 50%)`; else if (playerColor === 'lava') { ctx.fillStyle = "#d84315"; ctx.shadowBlur = 10; ctx.shadowColor = "#ffeb3b"; } else if (playerColor === 'electric') { ctx.fillStyle = "#00d2ff"; ctx.shadowBlur = 15; ctx.shadowColor = "#fff"; } else if (playerColor === 'ghost') { ctx.globalAlpha = 0.4; ctx.fillStyle = "white"; } else if (playerColor === 'neon') { ctx.fillStyle = "#39ff14"; ctx.shadowBlur = 15; ctx.shadowColor = "#39ff14"; } else { ctx.fillStyle = playerColor; }
     ctx.fillRect(player.x, player.y, 30, 30);
     ctx.shadowBlur = 0; ctx.globalAlpha = 1.0; ctx.restore();
 }
 
-function gameOver() { 
-    gameActive = false; 
-    mainMenu.style.display = "flex"; 
-    mobileControls.style.pointerEvents = "none";
-    updateUI(); 
-}
-
+function gameOver() { gameActive = false; mainMenu.style.display = "flex"; mobileControls.style.pointerEvents = "none"; updateUI(); }
 const setupBtn = (id, act) => {
     const btn = document.getElementById(id);
     btn.ontouchstart = (e) => { e.preventDefault(); if (act === "Jump") { if (!player.jumping && gameActive) { player.velY = JUMP_FORCE; player.jumping = true; } } else keys[config[act]] = true; };
