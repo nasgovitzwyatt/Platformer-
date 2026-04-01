@@ -183,21 +183,27 @@ function update() {
     if (!gameActive) return;
     mobileControls.style.pointerEvents = "auto";
     
-    // --- RESET ICE STATE IF FALLING ---
     if (player.velY !== 0) player.onIce = false; 
 
-    let speedMult = powerupStatus.SlowMo ? 0.7 : 1.0;
+    let timeScale = powerupStatus.SlowMo ? 0.7 : 1.0;
+    let horizontalAcc = 1.4; 
 
-    if (keys[config.Left] || keys["ArrowLeft"]) player.velX -= (player.onIce ? 0.1 : 1.2) * speedMult; 
-    if (keys[config.Right] || keys["ArrowRight"]) player.velX += (player.onIce ? 0.1 : 1.2) * speedMult;
+    if (keys[config.Left] || keys["ArrowLeft"]) {
+        player.velX -= (player.onIce ? 0.15 : horizontalAcc); 
+    }
+    if (keys[config.Right] || keys["ArrowRight"]) {
+        player.velX += (player.onIce ? 0.15 : horizontalAcc);
+    }
     
-    // Extreme Ice Friction (0.995) vs Normal (0.7)
     let friction = player.onIce ? 0.995 : 0.7;
     player.velX *= friction; 
     
+    const maxSpeed = 12;
+    if (Math.abs(player.velX) > maxSpeed) player.velX = Math.sign(player.velX) * maxSpeed;
+    
     player.x += player.velX; 
-    player.y += player.velY * speedMult;
-    player.velY += gravity * speedMult;
+    player.y += player.velY * timeScale;
+    player.velY += gravity * timeScale;
     
     if (player.x < -30) player.x = canvas.width; if (player.x > canvas.width) player.x = -30;
 
@@ -219,16 +225,16 @@ function update() {
             } 
             else { 
                 player.velY = 0; player.y = plat.y - 30; player.jumping = false; jumpCount = 0;
-                
                 player.onIce = (plat.type === 'ice');
-                
-                // Boosted Conveyor Force
-                if (plat.type === 'conveyor') player.velX += (plat.beltDir * 2.5); 
+                if (plat.type === 'conveyor') player.velX += (plat.beltDir * 3.5); 
                 if (plat.type === 'crumble') plat.isCracking = true; 
             }
         }
         if (plat.isCracking) plat.crackTimer -= 0.02;
-        if (plat.speed) { plat.x += plat.speed * speedMult; if (plat.x < 0 || plat.x > 320) plat.speed *= -1; }
+        if (plat.speed) { 
+            plat.x += plat.speed * timeScale; 
+            if (plat.x < 0 || plat.x > 320) plat.speed *= -1; 
+        }
     });
     
     platforms = platforms.filter(p => p.type !== 'crumble' || p.crackTimer > 0);
@@ -237,7 +243,7 @@ function update() {
         if (!item.collected) {
             let dist = Math.sqrt(Math.pow(player.x - item.x, 2) + Math.pow(player.y - item.y, 2));
             if (powerupStatus.Magnet && dist < 150) {
-                item.x += (player.x - item.x) * 0.1; item.y += (player.y - item.y) * 0.1;
+                item.x += (player.x - item.x) * 0.15; item.y += (player.y - item.y) * 0.15;
             }
             if (dist < 35) {
                 item.collected = true; tokens += bgMultipliers[currentBGName] || 1; 
