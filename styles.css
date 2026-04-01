@@ -1,65 +1,40 @@
-:root { 
-    --primary: #ff5722; 
-    --gold: #ffc107; 
-    --bg-glass: rgba(255, 255, 255, 0.1);
-}
-
+:root { --primary: #ff5722; --gold: #ffc107; }
 body {
     display: flex; flex-direction: column; align-items: center; justify-content: center;
-    min-height: 100vh; margin: 0; background: #0a0a12; font-family: 'Segoe UI', sans-serif;
+    min-height: 100vh; margin: 0; background: #050508; font-family: 'Segoe UI', sans-serif;
     overflow: hidden; touch-action: none; color: white;
 }
-
-/* UI Stats - Pointer events NONE so they don't block clicks */
-#ui { 
-    position: absolute; top: 20px; display: flex; gap: 10px; 
-    z-index: 10; pointer-events: none; 
-}
+#ui { position: absolute; top: 20px; display: flex; gap: 10px; z-index: 10; pointer-events: none; }
 #scoreBoard, #highScoreBoard, #tokenBoard { 
-    background: rgba(255, 255, 255, 0.05); color: white; padding: 8px 16px; 
-    border-radius: 12px; backdrop-filter: blur(10px); border: 1px solid rgba(255, 255, 255, 0.1);
-    font-weight: 800; pointer-events: none;
+    background: rgba(0,0,0,0.6); color: white; padding: 10px 20px; 
+    border-radius: 8px; border: 1px solid rgba(255,255,255,0.1); font-weight: bold;
 }
-
-/* Game Canvas */
 #game-container { position: relative; z-index: 1; }
-canvas { background: #000; border: 4px solid #1a1a1a; border-radius: 24px; }
+canvas { background: #000; border: 2px solid #333; border-radius: 4px; }
 
-/* Mobile Controls - Container is NONE, Buttons are AUTO */
-.controls { 
-    position: fixed; bottom: 30px; width: 90%; max-width: 450px;
-    display: flex; justify-content: space-between; align-items: flex-end;
-    z-index: 5; pointer-events: none; 
-}
+.controls { position: fixed; bottom: 30px; width: 90%; display: flex; justify-content: space-between; z-index: 5; pointer-events: none; }
 .control-btn { 
-    pointer-events: auto; width: 75px; height: 75px; border-radius: 22px;
-    background: rgba(255, 255, 255, 0.08); color: white; border: 1px solid rgba(255, 255, 255, 0.15);
-    font-size: 24px; font-weight: bold; backdrop-filter: blur(8px);
+    pointer-events: auto; width: 70px; height: 70px; border-radius: 50%;
+    background: rgba(255,255,255,0.05); color: white; border: 1px solid rgba(255,255,255,0.2);
+    font-size: 20px;
 }
-.jump-btn { width: 100px; height: 100px; background: var(--primary); border: none; }
+.jump-btn { background: var(--primary); border: none; width: 90px; height: 90px; }
 
-/* Menus - Highest Z-Index and Explicit pointer-events AUTO */
 .menu-screen {
-    position: fixed; inset: 0; background: rgba(5, 5, 12, 0.96);
-    backdrop-filter: blur(25px); display: flex; flex-direction: column;
-    align-items: center; justify-content: center; 
-    z-index: 9999; /* Ensure this is on top of everything */
-    color: white; pointer-events: auto; 
+    position: fixed; inset: 0; background: #000; display: flex; flex-direction: column;
+    align-items: center; justify-content: center; z-index: 2000;
 }
-
-.menu-buttons { display: flex; flex-direction: column; gap: 14px; width: 280px; }
-.menu-btn { 
-    padding: 18px; font-size: 18px; font-weight: 800; border-radius: 16px; 
-    border: 1px solid rgba(255, 255, 255, 0.1); cursor: pointer; 
-    background: #161625; color: white; pointer-events: auto;
-}
+.menu-buttons { display: flex; flex-direction: column; gap: 15px; width: 300px; }
+.menu-btn { padding: 20px; font-size: 16px; font-weight: bold; border-radius: 4px; border: none; cursor: pointer; background: #111; color: white; }
 .menu-btn.primary { background: var(--primary); }
-.menu-btn.shop-gold { background: var(--gold); color: black; }
-.menu-btn.secondary { background: #252535; width: 200px; margin-top: 20px; }
+.menu-btn.shop-gold { background: var(--gold); color: #000; }
 
-.skin-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; padding: 20px; }
-.skin-btn { width: 68px; height: 68px; border-radius: 16px; border: 3px solid transparent; cursor: pointer; pointer-events: auto; }
-.skin-btn.locked { background: #1a1a1a !important; opacity: 0.3; cursor: not-allowed; }
-.skin-btn.selected { border-color: #39ff14; box-shadow: 0 0 20px rgba(57, 255, 20, 0.4); }
+.shop-grid-container { display: flex; gap: 20px; width: 90%; max-width: 700px; }
+.shop-card { flex: 1; background: #111; padding: 20px; border-radius: 4px; border: 1px solid #222; }
+.scrollable { max-height: 300px; overflow-y: auto; }
+.shop-item { display: flex; justify-content: space-between; padding: 15px; background: #000; border: 1px solid #333; color: white; width: 100%; margin-bottom: 5px; cursor: pointer; }
 
-.bind-btn { background: #000; border: 2px solid var(--primary); color: var(--primary); padding: 8px 16px; border-radius: 10px; cursor: pointer; pointer-events: auto; }
+.skin-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; padding: 20px; }
+.skin-btn { width: 65px; height: 65px; border: 2px solid transparent; cursor: pointer; border-radius: 4px; }
+.skin-btn.locked { background: #222 !important; opacity: 0.2; }
+.skin-btn.selected { border-color: #fff; }
