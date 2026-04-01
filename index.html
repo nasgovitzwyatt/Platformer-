@@ -3,95 +3,71 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Cube Parkour: 1000m Challenge</title>
+    <title>Cube Parkour</title>
     <link rel="stylesheet" href="styles.css">
 </head>
 <body>
-    <div id="ui">
-        <div id="tokenBoard">Tokens: 0</div>
-        <div id="scoreBoard">Height: 0m</div>
-        <div id="highScoreBoard">Best: 0m</div>
-    </div>
-
-    <canvas id="gameCanvas" width="400" height="600"></canvas>
-
-    <div class="controls" id="mobileControls">
-        <button class="control-btn" id="leftBtn">◀</button>
-        <button class="control-btn" id="jumpBtn">JUMP</button>
-        <button class="control-btn" id="rightBtn">▶</button>
-    </div>
-
-    <div id="mainMenu" class="menu-screen">
-        <h1 class="game-title">CUBE PARKOUR</h1>
-        <div class="menu-buttons">
-            <button id="startBtn" class="menu-btn primary">START GAME</button>
-            <button id="shopBtn" class="menu-btn shop-gold">SHOP</button>
-            <button id="skinMenuBtn" class="menu-btn">SKINS</button>
-            <button id="settingsBtn" class="menu-btn">SETTINGS</button>
+    <div id="gameLayer">
+        <div id="ui">
+            <div id="tokenBoard">Tokens: 0</div>
+            <div id="scoreBoard">Height: 0m</div>
+            <div id="highScoreBoard">Best: 0m</div>
+        </div>
+        <canvas id="gameCanvas" width="400" height="600"></canvas>
+        <div class="controls" id="mobileControls">
+            <button class="control-btn" id="leftBtn">◀</button>
+            <button class="control-btn" id="jumpBtn">JUMP</button>
+            <button class="control-btn" id="rightBtn">▶</button>
         </div>
     </div>
 
-    <div id="shopMenu" class="menu-screen" style="display: none;">
-        <h2 class="shop-title">THE CUBE STORE</h2>
-        <div class="shop-grid-container">
-            <div class="shop-card">
-                <h3>Backgrounds</h3>
-                <div class="shop-item-list scrollable">
-                    <button class="shop-item" id="btn-bg-White" onclick="buyItem('bg', 'White', 0)">
-                        <span>White (1x)</span><span class="price" id="price-White">EQUIPPED</span>
-                    </button>
-                    <button class="shop-item" id="btn-bg-Blue" onclick="buyItem('bg', 'Blue', 0)">
-                        <span>Blue (1.2x)</span><span class="price" id="price-Blue">OWNED</span>
-                    </button>
-                    <button class="shop-item" id="btn-bg-Forest" onclick="buyItem('bg', 'Forest', 20)">
-                        <span>Forest (1.3x)</span><span class="price" id="price-Forest">20 T</span>
-                    </button>
-                    <button class="shop-item" id="btn-bg-Sunset" onclick="buyItem('bg', 'Sunset', 40)">
-                        <span>Sunset (1.6x)</span><span class="price" id="price-Sunset">40 T</span>
-                    </button>
-                    <button class="shop-item" id="btn-bg-Midnight" onclick="buyItem('bg', 'Midnight', 60)">
-                        <span>Midnight (2x)</span><span class="price" id="price-Midnight">60 T</span>
-                    </button>
-                    <button class="shop-item" id="btn-bg-Space" onclick="buyItem('bg', 'Space', 80)">
-                        <span>Space (2.5x)</span><span class="price" id="price-Space">80 T</span>
-                    </button>
-                    <button class="shop-item" id="btn-bg-Gold" onclick="buyItem('bg', 'Gold', 150)">
-                        <span>Gold (4x)</span><span class="price" id="price-Gold">150 T</span>
-                    </button>
-                    <button class="shop-item" id="btn-bg-Void" onclick="buyItem('bg', 'Void', 300)">
-                        <span>Void (10x)</span><span class="price" id="price-Void">300 T</span>
-                    </button>
-                </div>
-            </div>
-            <div class="shop-card">
-                <h3>Powerups</h3>
-                <div class="shop-item-list scrollable">
-                    <button class="shop-item" onclick="buyItem('pow', 'DoubleJump', 100)">
-                        <span>Double Jump</span><span class="price">100 T</span>
-                    </button>
-                    <button class="shop-item" onclick="buyItem('pow', 'Shield', 75)">
-                        <span>Shield</span><span class="price">75 T</span>
-                    </button>
-                </div>
+    <div id="menuLayer">
+        <div id="mainMenu" class="menu-screen">
+            <h1 class="game-title">CUBE PARKOUR</h1>
+            <div class="menu-buttons">
+                <button id="startBtn" class="menu-btn primary">START GAME</button>
+                <button id="shopBtn" class="menu-btn shop-gold">SHOP</button>
+                <button id="skinMenuBtn" class="menu-btn">SKINS</button>
+                <button id="settingsBtn" class="menu-btn">SETTINGS</button>
             </div>
         </div>
-        <button id="closeShop" class="menu-btn secondary">BACK</button>
-    </div>
 
-    <div id="settingsModal" class="menu-screen" style="display: none;">
-        <h2 class="shop-title">SETTINGS</h2>
-        <div class="settings-list">
-            <div class="setting-item"><span>JUMP</span><button id="bindJump" class="bind-btn">SPACE</button></div>
-            <div class="setting-item"><span>LEFT</span><button id="bindLeft" class="bind-btn">LEFT</button></div>
-            <div class="setting-item"><span>RIGHT</span><button id="bindRight" class="bind-btn">RIGHT</button></div>
+        <div id="shopMenu" class="menu-screen" style="display: none;">
+            <h2 class="shop-title">THE CUBE STORE</h2>
+            <div class="shop-grid-container">
+                <div class="shop-card">
+                    <h3>Backgrounds</h3>
+                    <div class="shop-item-list scrollable">
+                        <button class="shop-item" data-bg="White" data-price="0"><span>White (1x)</span><span class="price" id="price-White">EQUIPPED</span></button>
+                        <button class="shop-item" data-bg="Blue" data-price="0"><span>Blue (1.2x)</span><span class="price" id="price-Blue">OWNED</span></button>
+                        <button class="shop-item" data-bg="Forest" data-price="20"><span>Forest (1.3x)</span><span class="price" id="price-Forest">20 T</span></button>
+                        <button class="shop-item" data-bg="Sunset" data-price="40"><span>Sunset (1.6x)</span><span class="price" id="price-Sunset">40 T</span></button>
+                        <button class="shop-item" data-bg="Midnight" data-price="60"><span>Midnight (2x)</span><span class="price" id="price-Midnight">60 T</span></button>
+                        <button class="shop-item" data-bg="Space" data-price="80"><span>Space (2.5x)</span><span class="price" id="price-Space">80 T</span></button>
+                        <button class="shop-item" data-bg="Gold" data-price="150"><span>Gold (4x)</span><span class="price" id="price-Gold">150 T</span></button>
+                        <button class="shop-item" data-bg="Void" data-price="300"><span>Void (10x)</span><span class="price" id="price-Void">300 T</span></button>
+                    </div>
+                </div>
+            </div>
+            <button id="closeShop" class="menu-btn secondary">BACK</button>
         </div>
-        <button id="backToMenu" class="menu-btn secondary">BACK</button>
+
+        <div id="settingsModal" class="menu-screen" style="display: none;">
+            <h2 class="shop-title">SETTINGS</h2>
+            <div class="settings-list">
+                <div class="setting-item"><span>JUMP</span><button id="bindJump" class="bind-btn">SPACE</button></div>
+                <div class="setting-item"><span>LEFT</span><button id="bindLeft" class="bind-btn">LEFT</button></div>
+                <div class="setting-item"><span>RIGHT</span><button id="bindRight" class="bind-btn">RIGHT</button></div>
+            </div>
+            <button id="backToMenu" class="menu-btn secondary">BACK</button>
+        </div>
+
+        <div id="skinMenu" style="display: none;">
+            <h3>Skins</h3>
+            <div class="skin-grid" id="skinGridContainer"></div>
+        </div>
     </div>
 
-    <div id="skinMenu">
-        <h3>Skins</h3>
-        <div class="skin-grid">
-            <button class="skin-btn" id="skin-orange" onclick="changeSkin('#ff5722', 0, 'skin-orange')">0m</button>
-            <button class="skin-btn" id="skin-blue" onclick="changeSkin('#2196f3', 50, 'skin-blue')">50m</button>
-            <button class="skin-btn" id="skin-green" onclick="changeSkin('#4caf50', 100, 'skin-green')">100m</button>
-            <button class="skin-btn" id="skin-purple" onclick="changeSkin('#9c
+    <script src="script.js"></script>
+</body>
+</html>
