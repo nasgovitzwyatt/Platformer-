@@ -183,16 +183,17 @@ function update() {
     if (!gameActive) return;
     mobileControls.style.pointerEvents = "auto";
     
-    // --- RESET ICE STATE EVERY FRAME ---
-    player.onIce = false; 
+    // --- RESET ICE STATE IF FALLING ---
+    if (player.velY !== 0) player.onIce = false; 
 
     let speedMult = powerupStatus.SlowMo ? 0.7 : 1.0;
 
-    if (keys[config.Left] || keys["ArrowLeft"]) player.velX -= (player.onIce ? 0.3 : 1.2) * speedMult; 
-    if (keys[config.Right] || keys["ArrowRight"]) player.velX += (player.onIce ? 0.3 : 1.2) * speedMult;
+    if (keys[config.Left] || keys["ArrowLeft"]) player.velX -= (player.onIce ? 0.1 : 1.2) * speedMult; 
+    if (keys[config.Right] || keys["ArrowRight"]) player.velX += (player.onIce ? 0.1 : 1.2) * speedMult;
     
-    // Better Friction: 0.98 for ice (slide), 0.7 for normal (stop)
-    player.velX *= (player.onIce ? 0.98 : 0.7); 
+    // Extreme Ice Friction (0.995) vs Normal (0.7)
+    let friction = player.onIce ? 0.995 : 0.7;
+    player.velX *= friction; 
     
     player.x += player.velX; 
     player.y += player.velY * speedMult;
@@ -213,13 +214,16 @@ function update() {
             player.x + 30 > plat.x && player.x < plat.x + plat.width) {
             if (plat.type === 'tramp') { 
                 player.velY = BOUNCE_FORCE; 
-                player.jumping = true; jumpCount = 1; 
-            } else { 
+                player.jumping = true; jumpCount = 1;
+                player.onIce = false;
+            } 
+            else { 
                 player.velY = 0; player.y = plat.y - 30; player.jumping = false; jumpCount = 0;
                 
-                // Only enable ice if the platform type is ice
-                if (plat.type === 'ice') player.onIce = true;
-                if (plat.type === 'conveyor') player.velX += plat.beltDir; 
+                player.onIce = (plat.type === 'ice');
+                
+                // Boosted Conveyor Force
+                if (plat.type === 'conveyor') player.velX += (plat.beltDir * 2.5); 
                 if (plat.type === 'crumble') plat.isCracking = true; 
             }
         }
