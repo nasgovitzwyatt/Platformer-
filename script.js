@@ -126,8 +126,10 @@ window.addEventListener("keydown", e => {
     if ((e.code === config.Jump || e.code === "Space") && gameActive) { 
         if (!player.jumping) {
             player.velY = JUMP_FORCE; player.jumping = true; jumpCount = 1;
+            player.onIce = false; // Jumping breaks ice friction
         } else if (powerupStatus.DoubleJump && jumpCount < 2) {
             player.velY = JUMP_FORCE; jumpCount = 2;
+            player.onIce = false;
         }
     }
     keys[e.code] = true;
@@ -157,7 +159,6 @@ function generatePlatforms() {
         lastY -= (90 + gapModifier + Math.random() * 40);
         let roll = Math.random();
 
-        // 3% WORMHOLE SPAWN
         if (roll < 0.03) {
             wormholes.push({ x: Math.random() * 340, y: lastY, width: 40, height: 40 });
             continue; 
@@ -187,33 +188,33 @@ function update() {
 
     let timeScale = powerupStatus.SlowMo ? 0.7 : 1.0;
     
-    // --- VOID SKIN PARTICLES ---
+    // Void Skin particles
     if (selectedSkinId === "skin-void") {
-        for(let i=0; i<2; i++) {
+        for(let i=0; i<3; i++) {
             particles.push({
-                x: player.x + Math.random() * 30,
-                y: player.y + Math.random() * 30,
-                vx: (Math.random() - 0.5) * 2,
-                vy: (Math.random() - 0.5) * 2,
-                life: 1.0,
-                color: Math.random() > 0.5 ? "#a020f0" : "#000000"
+                x: player.x + Math.random() * 30, y: player.y + Math.random() * 30,
+                vx: (Math.random() - 0.5) * 1.5, vy: (Math.random() - 0.5) * 1.5,
+                life: 1.0, color: Math.random() > 0.4 ? "#a020f0" : "#220033"
             });
         }
     }
     particles.forEach((p, i) => {
-        p.x += p.vx; p.y += p.vy; p.life -= 0.02;
+        p.x += p.vx; p.y += p.vy; p.life -= 0.03;
         if(p.life <= 0) particles.splice(i, 1);
     });
 
-    // Horizontal logic
+    // Movement
     if (keys[config.Left] || keys["ArrowLeft"]) {
-        player.velX -= (player.onIce ? 0.08 : 1.4); 
+        player.velX -= (player.onIce ? 0.1 : 1.4); 
     }
     if (keys[config.Right] || keys["ArrowRight"]) {
-        player.velX += (player.onIce ? 0.08 : 1.4);
+        player.velX += (player.onIce ? 0.1 : 1.4);
     }
     
-    // --- ICE FRICTION FIX: 0.999 is nearly friction-less ---
+    // --- THE ICE FIX: CRITICAL PHYSICS ---
+    // If we are in the air (velY != 0), we aren't on ice anymore
+    if (Math.abs(player.velY) > 0.1) player.onIce = false;
+
     let friction = player.onIce ? 0.999 : 0.7;
     player.velX *= friction; 
     
@@ -223,6 +224,7 @@ function update() {
     
     if (player.x < -30) player.x = canvas.width; if (player.x > canvas.width) player.x = -30;
 
+    // Wormholes
     wormholes.forEach((wh, index) => {
         if (Math.abs(player.x - wh.x) < 35 && Math.abs(player.y - wh.y) < 35) {
             player.y -= 1500; cameraY -= 1500;
@@ -231,17 +233,19 @@ function update() {
         }
     });
 
-    // Collision resets Ice state unless touching ice
-    let touchingIceThisFrame = false;
-
     platforms.forEach(plat => {
         if (player.velY > 0 && player.y + 30 > plat.y && player.y + 30 < plat.y + 15 + player.velY && 
             player.x + 30 > plat.x && player.x < plat.x + plat.width) {
+            
             if (plat.type === 'tramp') { 
                 player.velY = BOUNCE_FORCE; player.jumping = true; jumpCount = 1;
+                player.onIce = false;
             } else { 
                 player.velY = 0; player.y = plat.y - 30; player.jumping = false; jumpCount = 0;
-                if (plat.type === 'ice') touchingIceThisFrame = true;
+                
+                // Set ice state ONLY here
+                player.onIce = (plat.type === 'ice');
+
                 if (plat.type === 'conveyor') player.velX += (plat.beltDir * 4.5); 
                 if (plat.type === 'crumble') plat.isCracking = true; 
             }
@@ -253,7 +257,6 @@ function update() {
         }
     });
     
-    player.onIce = touchingIceThisFrame;
     platforms = platforms.filter(p => p.type !== 'crumble' || p.crackTimer > 0);
 
     items.forEach(item => { 
@@ -322,7 +325,6 @@ function draw() {
     
     if (playerColor === 'rainbow') { ctx.fillStyle = `hsl(${(Date.now() / 10) % 360}, 100%, 50%)`; }
     else if (selectedSkinId === 'skin-void') {
-        // Dynamic Black/Purple Pulsing
         let pulse = Math.abs(Math.sin(Date.now() / 500));
         ctx.fillStyle = "#000000";
         ctx.strokeStyle = `rgb(${160 * pulse}, 32, ${240 * pulse})`;
@@ -348,6 +350,7 @@ const setupBtn = (id, act) => {
         if (act === "Jump" && gameActive) {
             if (!player.jumping) { player.velY = JUMP_FORCE; player.jumping = true; jumpCount = 1; }
             else if (powerupStatus.DoubleJump && jumpCount < 2) { player.velY = JUMP_FORCE; jumpCount = 2; }
+            player.onIce = false; // Jumping breaks friction
         } else keys[config[act]] = true; 
     };
     btn.ontouchend = () => keys[config[act]] = false;
