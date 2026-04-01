@@ -1,6 +1,7 @@
 const canvas = document.getElementById("gameCanvas");
 const ctx = canvas.getContext("2d");
 
+// UI Elements
 const mainMenu = document.getElementById("mainMenu"), 
       shopMenu = document.getElementById("shopMenu"),
       settingsModal = document.getElementById("settingsModal"), 
@@ -12,7 +13,7 @@ const bgMultipliers = {
     "Midnight": 2, "Space": 2.5, "Gold": 4, "Void": 10 
 };
 
-// --- DATA PERSISTENCE ---
+// --- DATA ---
 let tokens = parseFloat(localStorage.getItem("parkourTokens")) || 0;
 let highScore = parseInt(localStorage.getItem("parkourHigh")) || 0;
 let ownedItems = JSON.parse(localStorage.getItem("ownedItems")) || ["White", "Blue"];
@@ -29,60 +30,57 @@ let config = {
 let powerupStatus = JSON.parse(localStorage.getItem("powerupStatus")) || {
     DoubleJump: false, Magnet: false, SlowMo: false
 };
-let particles = [];
 
 let gravity = 0.5, cameraY = 0, maxHeight = 0, gameActive = false, animationId;
 const JUMP_FORCE = -13.5, BOUNCE_FORCE = -22;
 const player = { x: 180, y: 500, width: 30, height: 30, velX: 0, velY: 0, jumping: false, onIce: false };
-let platforms = [], items = [], keys = {}, wormholes = [], jumpCount = 0;
+let platforms = [], items = [], keys = {}, wormholes = [], particles = [], jumpCount = 0;
 
 // --- NAVIGATION ---
 document.getElementById("startBtn").onclick = () => init();
 document.getElementById("shopBtn").onclick = () => { mainMenu.style.display = "none"; shopMenu.style.display = "flex"; updateUI(); };
 document.getElementById("closeShop").onclick = () => { shopMenu.style.display = "none"; mainMenu.style.display = "flex"; };
 document.getElementById("skinMenuBtn").onclick = () => { skinMenu.style.display = (skinMenu.style.display === "none" ? "block" : "none"); };
-document.getElementById("settingsBtn").onclick = () => { mainMenu.style.display = "none"; settingsModal.style.display = "flex"; updateUI(); };
+document.getElementById("settingsBtn").onclick = () => { mainMenu.style.display = "none"; settingsModal.style.display = "flex"; setupBinds(); };
 document.getElementById("backToMenu").onclick = () => { settingsModal.style.display = "none"; mainMenu.style.display = "flex"; };
 
-// --- KEYBINDING LOGIC ---
+// --- KEYBINDINGS ---
 function setupBinds() {
-    const bindButtons = { Jump: "bindJump", Left: "bindLeft", Right: "bindRight" };
-    Object.keys(bindButtons).forEach(action => {
-        const btn = document.getElementById(bindButtons[action]);
+    const actions = ["Jump", "Left", "Right"];
+    actions.forEach(action => {
+        const btn = document.getElementById("bind" + action);
         if (btn) {
             btn.innerText = config[action].replace("Arrow", "");
             btn.onclick = () => {
                 btn.innerText = "...";
-                const listen = (e) => {
+                const tempListen = (e) => {
                     config[action] = e.code;
-                    localStorage.setItem(`key${action}`, e.code);
+                    localStorage.setItem("key" + action, e.code);
                     btn.innerText = e.code.replace("Arrow", "");
-                    window.removeEventListener("keydown", listen);
+                    window.removeEventListener("keydown", tempListen);
                 };
-                window.addEventListener("keydown", listen);
+                window.addEventListener("keydown", tempListen);
             };
         }
     });
 }
-setupBinds();
 
 function buyItem(type, name, price) {
     if (ownedItems.includes(name)) { 
         if (type === 'bg') currentBGName = name;
         else if (type === 'pow') {
             powerupStatus[name] = !powerupStatus[name];
-            localStorage.setItem("powerupStatus", JSON.stringify(powerupStatus));
         }
     } else if (tokens >= price) { 
         tokens -= price; 
         ownedItems.push(name); 
         if (type === 'bg') currentBGName = name;
         if (type === 'pow') powerupStatus[name] = true;
-        localStorage.setItem("powerupStatus", JSON.stringify(powerupStatus));
     }
     localStorage.setItem("parkourTokens", tokens); 
     localStorage.setItem("ownedItems", JSON.stringify(ownedItems));
     localStorage.setItem("currentBGName", currentBGName); 
+    localStorage.setItem("powerupStatus", JSON.stringify(powerupStatus));
     updateUI();
 }
 
@@ -92,18 +90,17 @@ function updateUI() {
     document.getElementById("highScoreBoard").innerText = `Best: ${highScore}m`;
     document.getElementById("scoreBoard").innerText = `Height: ${maxHeight}m`;
     
-    // Background Buttons
+    // Background price tags
     Object.keys(bgMultipliers).forEach(bg => {
         const p = document.getElementById(`price-${bg}`);
         if (p) {
             if (ownedItems.includes(bg)) {
                 p.innerText = (currentBGName === bg) ? "EQUIPPED" : "OWNED";
-                p.parentElement.classList.toggle("selected", currentBGName === bg);
             }
         }
     });
 
-    // Skin Gating
+    // Skins
     const skinData = [
         {id: "skin-orange", req: 0}, {id: "skin-blue", req: 50}, {id: "skin-green", req: 100}, {id: "skin-purple", req: 150},
         {id: "skin-gold", req: 200}, {id: "skin-mint", req: 250}, {id: "skin-lava", req: 300}, {id: "skin-camo", req: 350},
@@ -114,9 +111,9 @@ function updateUI() {
     skinData.forEach(s => {
         const btn = document.getElementById(s.id);
         if (btn) {
-            if (Number(highScore) >= s.req) { 
+            if (highScore >= s.req) { 
                 btn.classList.remove("locked"); 
-                btn.innerText = (selectedSkinId === s.id) ? "ACTIVE" : s.req + "m"; 
+                btn.innerText = (selectedSkinId === s.id) ? "ACTIVE" : s.req + "m";
                 btn.classList.toggle("selected", selectedSkinId === s.id); 
             } else { 
                 btn.classList.add("locked"); 
@@ -127,7 +124,7 @@ function updateUI() {
 }
 
 function changeSkin(color, req, id) {
-    if (Number(highScore) >= req) { 
+    if (highScore >= req) { 
         playerColor = color; selectedSkinId = id; 
         localStorage.setItem("playerColor", color); 
         localStorage.setItem("selectedSkinId", id); 
@@ -156,7 +153,7 @@ function init() {
     cameraY = 0; maxHeight = 0; jumpCount = 0; player.onIce = false;
     platforms.push({ x: 0, y: 580, width: 400, height: 20, type: 'normal', speed: 0, crackTimer: 1.0, isCracking: false }); 
     generatePlatforms(); 
-    gameActive = true; mainMenu.style.display = "none"; skinMenu.style.display = "none"; updateUI(); update();
+    gameActive = true; mainMenu.style.display = "none"; updateUI(); update();
 }
 
 function generatePlatforms() {
@@ -165,7 +162,6 @@ function generatePlatforms() {
         lastY -= (95 + Math.random() * 45);
         let roll = Math.random();
         if (roll < 0.035) { wormholes.push({ x: Math.random() * 340, y: lastY, width: 40, height: 40 }); continue; }
-        
         let type = 'normal';
         if (roll > 0.6) {
             let sub = Math.random();
@@ -176,14 +172,9 @@ function generatePlatforms() {
         }
         platforms.push({ x: Math.random() * 300, y: lastY, width: 75, height: 12, type: type, speed: (Math.random() < 0.2 ? 2 : 0), beltDir: 1.5, crackTimer: 1.0, isCracking: false });
         
-        // --- COIN SPACING FIX ---
-        // Instead of stacking on the platform, coins now spawn at a random height between platforms
+        // Random Coin Placement
         if (Math.random() < 0.3) {
-            items.push({ 
-                x: Math.random() * 360, 
-                y: lastY + 20 + (Math.random() * 40), 
-                collected: false 
-            });
+            items.push({ x: Math.random() * 360, y: lastY - 40 - (Math.random() * 30), collected: false });
         }
     }
 }
@@ -192,21 +183,21 @@ function update() {
     if (!gameActive) return;
     let timeScale = powerupStatus.SlowMo ? 0.7 : 1.0;
     
+    // Void Particles
     if (selectedSkinId === "skin-void") {
         for(let i=0; i<3; i++) {
             particles.push({
-                x: player.x + 15 + (Math.random()-0.5)*20, y: player.y + 15 + (Math.random()-0.5)*20,
-                vx: (Math.random()-0.5)*2, vy: (Math.random()-0.5)*2, life: 1.0, color: Math.random() > 0.5 ? "#7b1fa2" : "#000000"
+                x: player.x + 15, y: player.y + 15,
+                vx: (Math.random()-0.5)*3, vy: (Math.random()-0.5)*3, life: 1.0
             });
         }
     }
     particles.forEach((p, i) => { p.x += p.vx; p.y += p.vy; p.life -= 0.04; if(p.life <= 0) particles.splice(i, 1); });
 
-    if (keys[config.Left]) player.velX -= (player.onIce ? 0.05 : 1.3); 
-    if (keys[config.Right]) player.velX += (player.onIce ? 0.05 : 1.3);
+    if (keys[config.Left] || keys["ArrowLeft"]) player.velX -= (player.onIce ? 0.05 : 1.3); 
+    if (keys[config.Right] || keys["ArrowRight"]) player.velX += (player.onIce ? 0.05 : 1.3);
     
-    let f = player.onIce ? 0.999 : 0.7;
-    player.velX *= f;
+    player.velX *= (player.onIce ? 0.999 : 0.7);
     player.x += player.velX; 
     player.y += player.velY * timeScale;
     player.velY += gravity * timeScale;
@@ -260,7 +251,7 @@ function draw() {
     ctx.fillStyle = grad; ctx.fillRect(0, 0, canvas.width, canvas.height);
     
     ctx.save(); ctx.translate(0, -cameraY);
-    particles.forEach(p => { ctx.globalAlpha = p.life; ctx.fillStyle = p.color; ctx.fillRect(p.x, p.y, 4, 4); });
+    particles.forEach(p => { ctx.globalAlpha = p.life; ctx.fillStyle = Math.random() > 0.5 ? "#a020f0" : "#000"; ctx.fillRect(p.x, p.y, 4, 4); });
     ctx.globalAlpha = 1.0;
     wormholes.forEach(wh => { ctx.fillStyle = "#00ffff"; ctx.shadowBlur = 20; ctx.shadowColor = "#00ffff"; ctx.beginPath(); ctx.ellipse(wh.x + 20, wh.y + 20, 15, 25, 0, 0, Math.PI * 2); ctx.fill(); ctx.shadowBlur = 0; });
     platforms.forEach(p => { ctx.fillStyle = (p.type === 'tramp') ? "#ff4081" : (p.type === 'ice' ? "#b2ebf2" : (p.type === 'conveyor' ? "#bdbdbd" : "#455a64")); ctx.fillRect(p.x, p.y, p.width, p.height); });
