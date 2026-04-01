@@ -1,19 +1,24 @@
 const canvas = document.getElementById("gameCanvas");
 const ctx = canvas.getContext("2d");
 
-// UI Elements
-const mainMenu = document.getElementById("mainMenu"), 
-      shopMenu = document.getElementById("shopMenu"),
-      settingsModal = document.getElementById("settingsModal"), 
-      skinMenu = document.getElementById("skinMenu"),
-      mobileControls = document.getElementById("mobileControls");
-
-const bgMultipliers = { 
-    "White": 1, "Blue": 1.2, "Forest": 1.3, "Sunset": 1.6, 
-    "Midnight": 2, "Space": 2.5, "Gold": 4, "Void": 10 
+const menus = {
+    main: document.getElementById("mainMenu"),
+    shop: document.getElementById("shopMenu"),
+    skins: document.getElementById("skinMenu"),
+    settings: document.getElementById("settingsModal")
 };
 
-// --- DATA ---
+const skinData = [
+    {id: "skin-orange", color: "#ff5722", req: 0}, {id: "skin-blue", color: "#2196f3", req: 50},
+    {id: "skin-green", color: "#4caf50", req: 100}, {id: "skin-purple", color: "#9c27b0", req: 150},
+    {id: "skin-gold", color: "#ffcc00", req: 200}, {id: "skin-mint", color: "#1de9b6", req: 250},
+    {id: "skin-lava", color: "#d84315", req: 300}, {id: "skin-camo", color: "#4b5320", req: 350},
+    {id: "skin-ghost", color: "ghost", req: 400}, {id: "skin-neon", color: "#39ff14", req: 450},
+    {id: "skin-rainbow", color: "rainbow", req: 500}, {id: "skin-diamond", color: "#b2ebf2", req: 600},
+    {id: "skin-ruby", color: "#e91e63", req: 700}, {id: "skin-emerald", req: #2ecc71, req: 800},
+    {id: "skin-electric", color: "#00d2ff", req: 900}, {id: "skin-void", color: "void", req: 1000}
+];
+
 let tokens = parseFloat(localStorage.getItem("parkourTokens")) || 0;
 let highScore = parseInt(localStorage.getItem("parkourHigh")) || 0;
 let ownedItems = JSON.parse(localStorage.getItem("ownedItems")) || ["White", "Blue"];
@@ -27,250 +32,158 @@ let config = {
     Right: localStorage.getItem("keyRight") || "ArrowRight" 
 };
 
-let powerupStatus = JSON.parse(localStorage.getItem("powerupStatus")) || {
-    DoubleJump: false, Magnet: false, SlowMo: false
-};
+let powerupStatus = JSON.parse(localStorage.getItem("powerupStatus")) || { DoubleJump: false, Magnet: false };
+let player = { x: 180, y: 500, velX: 0, velY: 0, jumping: false, onIce: false },
+    platforms = [], keys = {}, particles = [], jumpCount = 0, cameraY = 0, maxHeight = 0, gameActive = false, animationId;
 
-let gravity = 0.5, cameraY = 0, maxHeight = 0, gameActive = false, animationId;
-const JUMP_FORCE = -13.5, BOUNCE_FORCE = -22;
-const player = { x: 180, y: 500, width: 30, height: 30, velX: 0, velY: 0, jumping: false, onIce: false };
-let platforms = [], items = [], keys = {}, wormholes = [], particles = [], jumpCount = 0;
-
-// --- NAVIGATION ---
+// --- NAVIGATION & SKIN INJECTION ---
 document.getElementById("startBtn").onclick = () => init();
-document.getElementById("shopBtn").onclick = () => { mainMenu.style.display = "none"; shopMenu.style.display = "flex"; updateUI(); };
-document.getElementById("closeShop").onclick = () => { shopMenu.style.display = "none"; mainMenu.style.display = "flex"; };
-document.getElementById("skinMenuBtn").onclick = () => { skinMenu.style.display = (skinMenu.style.display === "none" ? "block" : "none"); };
-document.getElementById("settingsBtn").onclick = () => { mainMenu.style.display = "none"; settingsModal.style.display = "flex"; setupBinds(); };
-document.getElementById("backToMenu").onclick = () => { settingsModal.style.display = "none"; mainMenu.style.display = "flex"; };
+document.getElementById("shopBtn").onclick = () => showMenu('shop');
+document.getElementById("skinMenuBtn").onclick = () => showMenu('skins');
+document.getElementById("settingsBtn").onclick = () => showMenu('settings');
+document.querySelectorAll(".secondary").forEach(b => b.onclick = () => showMenu('main'));
 
-// --- KEYBINDINGS ---
-function setupBinds() {
-    const actions = ["Jump", "Left", "Right"];
-    actions.forEach(action => {
-        const btn = document.getElementById("bind" + action);
-        if (btn) {
-            btn.innerText = config[action].replace("Arrow", "");
-            btn.onclick = () => {
-                btn.innerText = "...";
-                const tempListen = (e) => {
-                    config[action] = e.code;
-                    localStorage.setItem("key" + action, e.code);
-                    btn.innerText = e.code.replace("Arrow", "");
-                    window.removeEventListener("keydown", tempListen);
-                };
-                window.addEventListener("keydown", tempListen);
-            };
-        }
-    });
-}
-
-function buyItem(type, name, price) {
-    if (ownedItems.includes(name)) { 
-        if (type === 'bg') currentBGName = name;
-        else if (type === 'pow') {
-            powerupStatus[name] = !powerupStatus[name];
-        }
-    } else if (tokens >= price) { 
-        tokens -= price; 
-        ownedItems.push(name); 
-        if (type === 'bg') currentBGName = name;
-        if (type === 'pow') powerupStatus[name] = true;
-    }
-    localStorage.setItem("parkourTokens", tokens); 
-    localStorage.setItem("ownedItems", JSON.stringify(ownedItems));
-    localStorage.setItem("currentBGName", currentBGName); 
-    localStorage.setItem("powerupStatus", JSON.stringify(powerupStatus));
+function showMenu(key) {
+    Object.values(menus).forEach(m => m.style.display = "none");
+    if (menus[key]) menus[key].style.display = "flex";
     updateUI();
 }
 
-function updateUI() {
-    highScore = parseInt(localStorage.getItem("parkourHigh")) || 0;
-    document.getElementById("tokenBoard").innerText = `Tokens: ${Math.floor(tokens)}`;
-    document.getElementById("highScoreBoard").innerText = `Best: ${highScore}m`;
-    document.getElementById("scoreBoard").innerText = `Height: ${maxHeight}m`;
-    
-    // Background price tags
-    Object.keys(bgMultipliers).forEach(bg => {
-        const p = document.getElementById(`price-${bg}`);
-        if (p) {
-            if (ownedItems.includes(bg)) {
-                p.innerText = (currentBGName === bg) ? "EQUIPPED" : "OWNED";
-            }
-        }
+// Generate Skin Grid Automatically
+const skinGrid = document.getElementById("skinGrid");
+skinData.forEach(s => {
+    const btn = document.createElement("button");
+    btn.id = s.id; btn.className = "skin-btn";
+    btn.onclick = () => changeSkin(s.color, s.req, s.id);
+    skinGrid.appendChild(btn);
+});
+
+function setupBinds() {
+    ["Jump", "Left", "Right"].forEach(action => {
+        const btn = document.getElementById("bind" + action);
+        btn.onclick = (e) => {
+            e.stopPropagation(); btn.innerText = "...";
+            const listener = (event) => {
+                event.preventDefault(); // CRITICAL: Stop flicker
+                config[action] = event.code;
+                localStorage.setItem("key" + action, event.code);
+                btn.innerText = event.code.replace("Arrow", "");
+                window.removeEventListener("keydown", listener);
+            };
+            window.addEventListener("keydown", listener);
+        };
     });
+}
+setupBinds();
 
-    // Skins
-    const skinData = [
-        {id: "skin-orange", req: 0}, {id: "skin-blue", req: 50}, {id: "skin-green", req: 100}, {id: "skin-purple", req: 150},
-        {id: "skin-gold", req: 200}, {id: "skin-mint", req: 250}, {id: "skin-lava", req: 300}, {id: "skin-camo", req: 350},
-        {id: "skin-ghost", req: 400}, {id: "skin-neon", req: 450}, {id: "skin-rainbow", req: 500}, {id: "skin-diamond", req: 600},
-        {id: "skin-ruby", req: 700}, {id: "skin-emerald", req: 800}, {id: "skin-electric", req: 900}, {id: "skin-void", req: 1000}
-    ];
-
+function updateUI() {
+    document.getElementById("tokenBoard").innerText = `🪙 ${Math.floor(tokens)}`;
+    document.getElementById("highScoreBoard").innerText = `🏆 ${highScore}m`;
+    document.getElementById("scoreBoard").innerText = `Height: ${maxHeight}m`;
     skinData.forEach(s => {
         const btn = document.getElementById(s.id);
-        if (btn) {
-            if (highScore >= s.req) { 
-                btn.classList.remove("locked"); 
-                btn.innerText = (selectedSkinId === s.id) ? "ACTIVE" : s.req + "m";
-                btn.classList.toggle("selected", selectedSkinId === s.id); 
-            } else { 
-                btn.classList.add("locked"); 
-                btn.innerText = "🔒 " + s.req + "m"; 
-            }
-        }
+        if (highScore >= s.req) {
+            btn.classList.remove("locked");
+            btn.innerText = (selectedSkinId === s.id) ? "●" : "";
+            btn.classList.toggle("selected", selectedSkinId === s.id);
+        } else { btn.classList.add("locked"); btn.innerText = "🔒"; }
     });
 }
 
 function changeSkin(color, req, id) {
-    if (highScore >= req) { 
-        playerColor = color; selectedSkinId = id; 
-        localStorage.setItem("playerColor", color); 
-        localStorage.setItem("selectedSkinId", id); 
+    if (highScore >= req) {
+        playerColor = color; selectedSkinId = id;
+        localStorage.setItem("playerColor", color);
+        localStorage.setItem("selectedSkinId", id);
         updateUI();
     }
 }
 
-window.addEventListener("keydown", e => {
-    if ((e.code === config.Jump || e.code === "Space") && gameActive) { 
-        if (!player.jumping) {
-            player.velY = JUMP_FORCE; player.jumping = true; jumpCount = 1;
-            player.onIce = false;
-        } else if (powerupStatus.DoubleJump && jumpCount < 2) {
-            player.velY = JUMP_FORCE; jumpCount = 2;
-            player.onIce = false;
-        }
+// Controls
+function setupMobile() {
+    const press = (key, val) => keys[config[key]] = val;
+    document.getElementById("leftBtn").ontouchstart = (e) => { e.preventDefault(); press("Left", true); };
+    document.getElementById("leftBtn").ontouchend = () => press("Left", false);
+    document.getElementById("rightBtn").ontouchstart = (e) => { e.preventDefault(); press("Right", true); };
+    document.getElementById("rightBtn").ontouchend = () => press("Right", false);
+    document.getElementById("jumpBtn").ontouchstart = (e) => {
+        e.preventDefault();
+        if (!player.jumping) { player.velY = -13.5; player.jumping = true; jumpCount = 1; }
+        else if (powerupStatus.DoubleJump && jumpCount < 2) { player.velY = -13.5; jumpCount = 2; }
+    };
+}
+setupMobile();
+
+window.onkeydown = (e) => {
+    if (e.code === config.Jump && gameActive) {
+        if (!player.jumping) { player.velY = -13.5; player.jumping = true; jumpCount = 1; }
+        else if (powerupStatus.DoubleJump && jumpCount < 2) { player.velY = -13.5; jumpCount = 2; }
     }
     keys[e.code] = true;
-});
-window.addEventListener("keyup", e => keys[e.code] = false);
+};
+window.onkeyup = (e) => keys[e.code] = false;
 
 function init() {
-    cancelAnimationFrame(animationId);
-    platforms = []; items = []; wormholes = []; particles = [];
-    player.x = 180; player.y = 500; player.velX = 0; player.velY = 0; 
-    cameraY = 0; maxHeight = 0; jumpCount = 0; player.onIce = false;
-    platforms.push({ x: 0, y: 580, width: 400, height: 20, type: 'normal', speed: 0, crackTimer: 1.0, isCracking: false }); 
-    generatePlatforms(); 
-    gameActive = true; mainMenu.style.display = "none"; updateUI(); update();
-}
-
-function generatePlatforms() {
-    let lastY = platforms[0].y;
-    for (let i = 0; i < 1200; i++) { 
-        lastY -= (95 + Math.random() * 45);
-        let roll = Math.random();
-        if (roll < 0.035) { wormholes.push({ x: Math.random() * 340, y: lastY, width: 40, height: 40 }); continue; }
-        let type = 'normal';
-        if (roll > 0.6) {
-            let sub = Math.random();
-            if (sub < 0.25) type = 'tramp'; 
-            else if (sub < 0.45) type = 'conveyor'; 
-            else if (sub < 0.7) type = 'crumble'; 
-            else type = 'ice';
-        }
-        platforms.push({ x: Math.random() * 300, y: lastY, width: 75, height: 12, type: type, speed: (Math.random() < 0.2 ? 2 : 0), beltDir: 1.5, crackTimer: 1.0, isCracking: false });
-        
-        // Random Coin Placement
-        if (Math.random() < 0.3) {
-            items.push({ x: Math.random() * 360, y: lastY - 40 - (Math.random() * 30), collected: false });
-        }
+    platforms = []; player.x = 180; player.y = 500; player.velX = 0; player.velY = 0; cameraY = 0; maxHeight = 0;
+    platforms.push({ x: 0, y: 580, width: 400, height: 20, type: 'normal' });
+    for (let i = 0; i < 1500; i++) {
+        let lastY = platforms[platforms.length-1].y - (90 + Math.random() * 50);
+        let type = 'normal'; let r = Math.random();
+        if (r > 0.8) type = 'ice'; else if (r > 0.7) type = 'tramp'; else if (r > 0.6) type = 'crumble';
+        platforms.push({ x: Math.random() * 300, y: lastY, width: 80, height: 12, type: type, crack: 1.0 });
     }
+    gameActive = true; showMenu('none'); update();
 }
 
 function update() {
     if (!gameActive) return;
-    let timeScale = powerupStatus.SlowMo ? 0.7 : 1.0;
-    
-    // Void Particles
-    if (selectedSkinId === "skin-void") {
-        for(let i=0; i<3; i++) {
-            particles.push({
-                x: player.x + 15, y: player.y + 15,
-                vx: (Math.random()-0.5)*3, vy: (Math.random()-0.5)*3, life: 1.0
-            });
-        }
-    }
-    particles.forEach((p, i) => { p.x += p.vx; p.y += p.vy; p.life -= 0.04; if(p.life <= 0) particles.splice(i, 1); });
-
-    if (keys[config.Left] || keys["ArrowLeft"]) player.velX -= (player.onIce ? 0.05 : 1.3); 
-    if (keys[config.Right] || keys["ArrowRight"]) player.velX += (player.onIce ? 0.05 : 1.3);
-    
-    player.velX *= (player.onIce ? 0.999 : 0.7);
-    player.x += player.velX; 
-    player.y += player.velY * timeScale;
-    player.velY += gravity * timeScale;
-    
+    if (keys[config.Left]) player.velX -= player.onIce ? 0.08 : 1.3;
+    if (keys[config.Right]) player.velX += player.onIce ? 0.08 : 1.3;
+    player.velX *= player.onIce ? 0.99 : 0.7;
+    player.x += player.velX; player.y += player.velY; player.velY += 0.5;
     if (player.x < -30) player.x = canvas.width; if (player.x > canvas.width) player.x = -30;
-
-    wormholes.forEach((wh, index) => {
-        if (Math.abs(player.x - wh.x) < 35 && Math.abs(player.y - wh.y) < 35) {
-            player.y -= 1500; cameraY -= 1500; wormholes.splice(index, 1);
-            platforms.push({ x: player.x-20, y: player.y+50, width: 100, height: 12, type: 'normal', speed: 0, crackTimer: 1.0, isCracking: false });
-        }
-    });
 
     let touchingIce = false;
     platforms.forEach(p => {
         if (player.velY > 0 && player.y + 30 > p.y && player.y + 30 < p.y + 15 + player.velY && player.x + 30 > p.x && player.x < p.x + p.width) {
-            if (p.type === 'tramp') { player.velY = BOUNCE_FORCE; player.jumping = true; }
+            if (p.type === 'tramp') { player.velY = -22; player.jumping = true; }
             else {
                 player.velY = 0; player.y = p.y - 30; player.jumping = false; jumpCount = 0;
                 if (p.type === 'ice') touchingIce = true;
-                if (p.type === 'conveyor') player.velX += 4.5;
                 if (p.type === 'crumble') p.isCracking = true;
             }
         }
-        if (p.speed) { p.x += p.speed; if (p.x < 0 || p.x > 320) p.speed *= -1; }
-        if (p.isCracking) p.crackTimer -= 0.02;
+        if (p.isCracking) p.crack -= 0.02;
     });
     player.onIce = touchingIce;
-    platforms = platforms.filter(p => p.type !== 'crumble' || p.crackTimer > 0);
+    platforms = platforms.filter(p => p.type !== 'crumble' || p.crack > 0);
 
-    items.forEach(it => {
-        if (!it.collected) {
-            let d = Math.sqrt((player.x-it.x)**2 + (player.y-it.y)**2);
-            if (powerupStatus.Magnet && d < 160) { it.x += (player.x-it.x)*0.2; it.y += (player.y-it.y)*0.2; }
-            if (d < 35) { it.collected = true; tokens += bgMultipliers[currentBGName] || 1; localStorage.setItem("parkourTokens", tokens); updateUI(); }
-        }
-    });
-    
     if (player.y < cameraY + 300) cameraY = player.y - 300;
     maxHeight = Math.max(maxHeight, Math.floor((500 - player.y) / 10));
-    if (player.y > cameraY + 750) gameOver();
+    if (player.y > cameraY + 800) gameOver();
     draw(); animationId = requestAnimationFrame(update);
 }
 
 function draw() {
-    ctx.clearRect(0,0, canvas.width, canvas.height);
-    let grad = ctx.createLinearGradient(0, 0, 0, canvas.height);
-    if (currentBGName === "White") { grad.addColorStop(0, "#fff"); grad.addColorStop(1, "#ddd"); }
-    else if (currentBGName === "Void") { grad.addColorStop(0, "#000"); grad.addColorStop(1, "#111"); }
-    else { grad.addColorStop(0, "#222"); grad.addColorStop(1, "#000"); }
-    ctx.fillStyle = grad; ctx.fillRect(0, 0, canvas.width, canvas.height);
-    
+    ctx.clearRect(0,0,400,600);
     ctx.save(); ctx.translate(0, -cameraY);
-    particles.forEach(p => { ctx.globalAlpha = p.life; ctx.fillStyle = Math.random() > 0.5 ? "#a020f0" : "#000"; ctx.fillRect(p.x, p.y, 4, 4); });
-    ctx.globalAlpha = 1.0;
-    wormholes.forEach(wh => { ctx.fillStyle = "#00ffff"; ctx.shadowBlur = 20; ctx.shadowColor = "#00ffff"; ctx.beginPath(); ctx.ellipse(wh.x + 20, wh.y + 20, 15, 25, 0, 0, Math.PI * 2); ctx.fill(); ctx.shadowBlur = 0; });
-    platforms.forEach(p => { ctx.fillStyle = (p.type === 'tramp') ? "#ff4081" : (p.type === 'ice' ? "#b2ebf2" : (p.type === 'conveyor' ? "#bdbdbd" : "#455a64")); ctx.fillRect(p.x, p.y, p.width, p.height); });
-    items.forEach(it => { if (!it.collected) { ctx.fillStyle = "#ffd600"; ctx.beginPath(); ctx.arc(it.x+5, it.y+5, 8, 0, Math.PI*2); ctx.fill(); } });
-    
-    if (selectedSkinId === 'skin-void') {
-        let p = Math.abs(Math.sin(Date.now() / 400)); ctx.fillStyle = "#000"; ctx.strokeStyle = `rgb(${120*p}, 0, ${200*p})`; ctx.lineWidth = 4; ctx.fillRect(player.x, player.y, 30, 30); ctx.strokeRect(player.x, player.y, 30, 30);
-    } else if (playerColor === 'rainbow') {
-        ctx.fillStyle = `hsl(${(Date.now() / 10) % 360}, 100%, 50%)`; ctx.fillRect(player.x, player.y, 30, 30);
-    } else { ctx.fillStyle = playerColor; ctx.fillRect(player.x, player.y, 30, 30); }
+    platforms.forEach(p => {
+        ctx.fillStyle = (p.type === 'ice') ? "#00f2fe" : (p.type === 'tramp' ? "#ff0080" : "#4caf50");
+        ctx.fillRect(p.x, p.y, p.width, p.height);
+    });
+    if (selectedSkinId === "skin-void") {
+        let p = Math.abs(Math.sin(Date.now() / 400));
+        ctx.fillStyle = "#000"; ctx.strokeStyle = `rgb(${160*p}, 0, ${240*p})`; ctx.lineWidth = 4;
+        ctx.fillRect(player.x, player.y, 30, 30); ctx.strokeRect(player.x, player.y, 30, 30);
+    } else {
+        ctx.fillStyle = playerColor === "rainbow" ? `hsl(${Date.now()/10%360}, 100%, 50%)` : playerColor;
+        ctx.fillRect(player.x, player.y, 30, 30);
+    }
     ctx.restore();
 }
 
-function gameOver() { gameActive = false; cancelAnimationFrame(animationId); if (maxHeight > highScore) { highScore = maxHeight; localStorage.setItem("parkourHigh", highScore.toString()); } mainMenu.style.display = "flex"; updateUI(); }
-
-const setupBtn = (id, act) => {
-    const btn = document.getElementById(id); if (!btn) return;
-    btn.ontouchstart = (e) => { e.preventDefault(); if (act === "Jump" && gameActive) { if (!player.jumping) { player.velY = JUMP_FORCE; player.jumping = true; jumpCount = 1; } else if (powerupStatus.DoubleJump && jumpCount < 2) { player.velY = JUMP_FORCE; jumpCount = 2; } } else keys[config[act]] = true; };
-    btn.ontouchend = () => keys[config[act]] = false;
-};
-setupBtn("leftBtn", "Left"); setupBtn("rightBtn", "Right"); setupBtn("jumpBtn", "Jump");
-updateUI();
+function gameOver() {
+    gameActive = false; cancelAnimationFrame(animationId);
+    if (maxHeight > highScore) { highScore = maxHeight; localStorage.setItem("parkourHigh", highScore); }
+    showMenu('main');
+}
