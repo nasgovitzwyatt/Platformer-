@@ -34,7 +34,7 @@ let particles = [];
 
 let gravity = 0.5, cameraY = 0, maxHeight = 0, gameActive = false, animationId;
 const JUMP_FORCE = -13.5, BOUNCE_FORCE = -22;
-const player = { x: 180, y: 500, width: 30, height: 30, velX: 0, velY: 0, jumping: false, onIce: false, conveyorForce: 0 };
+const player = { x: 180, y: 500, width: 30, height: 30, velX: 0, velY: 0, jumping: false, onIce: false };
 let platforms = [], items = [], keys = {}, wormholes = [], jumpCount = 0;
 
 // --- NAVIGATION ---
@@ -71,25 +71,7 @@ function updateUI() {
     document.getElementById("highScoreBoard").innerText = `Best: ${highScore}m`;
     document.getElementById("scoreBoard").innerText = `Height: ${maxHeight}m`;
     
-    Object.keys(bgMultipliers).forEach(bg => {
-        const p = document.getElementById(`price-${bg}`);
-        if (p) {
-            if (ownedItems.includes(bg)) {
-                p.innerText = (currentBGName === bg) ? "EQUIPPED" : "EQUIP";
-                p.parentElement.classList.toggle("selected", currentBGName === bg);
-            }
-        }
-    });
-
-    const powButtons = document.querySelectorAll("#shopMenu .shop-card:nth-child(2) .shop-item");
-    powButtons.forEach(btn => {
-        const spanText = btn.querySelector("span").innerText.replace(" ", "");
-        if (ownedItems.includes(spanText)) {
-            btn.querySelector(".price").innerText = powerupStatus[spanText] ? "ACTIVE" : "OFF";
-            btn.classList.toggle("selected", powerupStatus[spanText]);
-        }
-    });
-
+    // STRICT SKIN UNLOCK
     const skinData = [
         {id: "skin-orange", req: 0}, {id: "skin-blue", req: 50}, {id: "skin-green", req: 100}, {id: "skin-purple", req: 150},
         {id: "skin-gold", req: 200}, {id: "skin-mint", req: 250}, {id: "skin-lava", req: 300}, {id: "skin-camo", req: 350},
@@ -102,12 +84,11 @@ function updateUI() {
         if (btn) {
             if (Number(highScore) >= s.req) { 
                 btn.classList.remove("locked"); 
-                btn.innerText = (selectedSkinId === s.id) ? "ACTIVE" : "SELECT"; 
+                btn.innerText = (selectedSkinId === s.id) ? "ACTIVE" : s.req + "m"; 
                 btn.classList.toggle("selected", selectedSkinId === s.id); 
             } else { 
                 btn.classList.add("locked"); 
                 btn.innerText = "🔒 " + s.req + "m"; 
-                btn.classList.remove("selected");
             }
         }
     });
@@ -118,7 +99,7 @@ function changeSkin(color, req, id) {
         playerColor = color; selectedSkinId = id; 
         localStorage.setItem("playerColor", color); 
         localStorage.setItem("selectedSkinId", id); 
-        updateUI(); skinMenu.style.display = "none"; 
+        updateUI();
     }
 }
 
@@ -126,7 +107,7 @@ window.addEventListener("keydown", e => {
     if ((e.code === config.Jump || e.code === "Space") && gameActive) { 
         if (!player.jumping) {
             player.velY = JUMP_FORCE; player.jumping = true; jumpCount = 1;
-            player.onIce = false; // Jumping breaks ice friction
+            player.onIce = false;
         } else if (powerupStatus.DoubleJump && jumpCount < 2) {
             player.velY = JUMP_FORCE; jumpCount = 2;
             player.onIce = false;
@@ -145,7 +126,6 @@ function init() {
     platforms.push({ x: 0, y: 580, width: 400, height: 20, type: 'normal', speed: 0, crackTimer: 1.0, isCracking: false }); 
     generatePlatforms(); 
     gameActive = true;
-    mobileControls.style.pointerEvents = "none";
     mainMenu.style.display = "none"; shopMenu.style.display = "none";
     updateUI(); 
     update();
@@ -153,70 +133,58 @@ function init() {
 
 function generatePlatforms() {
     let lastY = platforms[0].y;
-    for (let i = 0; i < 1000; i++) { 
-        let heightM = (500 - lastY) / 10;
-        let gapModifier = Math.min(55, heightM / 18);
-        lastY -= (90 + gapModifier + Math.random() * 40);
+    for (let i = 0; i < 1200; i++) { 
+        lastY -= (95 + Math.random() * 45);
         let roll = Math.random();
 
-        if (roll < 0.03) {
+        if (roll < 0.035) {
             wormholes.push({ x: Math.random() * 340, y: lastY, width: 40, height: 40 });
             continue; 
         }
 
         let type = 'normal';
-        let normalChance = Math.max(0.3, 0.65 - (heightM / 1800));
-        if (roll > normalChance) {
-            let subRoll = Math.random();
-            if (subRoll < 0.35) type = 'tramp'; 
-            else if (subRoll < 0.45) type = 'conveyor'; 
-            else if (subRoll < 0.75) type = 'crumble'; 
+        if (roll > 0.6) {
+            let sub = Math.random();
+            if (sub < 0.25) type = 'tramp'; 
+            else if (sub < 0.45) type = 'conveyor'; 
+            else if (sub < 0.7) type = 'crumble'; 
             else type = 'ice';
         }
-        let moveSpeed = (type !== 'conveyor' && Math.random() < 0.25) ? (1.5 + (heightM/600)) : 0;
         platforms.push({ 
-            x: Math.random() * 300, y: lastY, width: Math.max(45, 80 - (heightM / 30)), 
-            height: 12, type: type, speed: moveSpeed, beltDir: 1.5, crackTimer: 1.0, isCracking: false 
+            x: Math.random() * 300, y: lastY, width: 75, 
+            height: 12, type: type, speed: (Math.random() < 0.2 ? 2 : 0), beltDir: 1.5, crackTimer: 1.0, isCracking: false 
         });
-        if (Math.random() < 0.3) items.push({ x: platforms[platforms.length-1].x + 35, y: lastY - 25, collected: false });
+        if (Math.random() < 0.3) items.push({ x: platforms[platforms.length-1].x + 30, y: lastY - 25, collected: false });
     }
 }
 
 function update() {
     if (!gameActive) return;
-    mobileControls.style.pointerEvents = "auto";
 
     let timeScale = powerupStatus.SlowMo ? 0.7 : 1.0;
     
-    // Void Skin particles
+    // --- VOID PARTICLES ---
     if (selectedSkinId === "skin-void") {
         for(let i=0; i<3; i++) {
             particles.push({
-                x: player.x + Math.random() * 30, y: player.y + Math.random() * 30,
-                vx: (Math.random() - 0.5) * 1.5, vy: (Math.random() - 0.5) * 1.5,
-                life: 1.0, color: Math.random() > 0.4 ? "#a020f0" : "#220033"
+                x: player.x + 15 + (Math.random()-0.5)*20, y: player.y + 15 + (Math.random()-0.5)*20,
+                vx: (Math.random()-0.5)*2, vy: (Math.random()-0.5)*2,
+                life: 1.0, color: Math.random() > 0.5 ? "#7b1fa2" : "#000000"
             });
         }
     }
     particles.forEach((p, i) => {
-        p.x += p.vx; p.y += p.vy; p.life -= 0.03;
+        p.x += p.vx; p.y += p.vy; p.life -= 0.04;
         if(p.life <= 0) particles.splice(i, 1);
     });
 
-    // Movement
-    if (keys[config.Left] || keys["ArrowLeft"]) {
-        player.velX -= (player.onIce ? 0.1 : 1.4); 
-    }
-    if (keys[config.Right] || keys["ArrowRight"]) {
-        player.velX += (player.onIce ? 0.1 : 1.4);
-    }
+    // --- PHYSICS ---
+    if (keys[config.Left] || keys["ArrowLeft"]) player.velX -= (player.onIce ? 0.05 : 1.3); 
+    if (keys[config.Right] || keys["ArrowRight"]) player.velX += (player.onIce ? 0.05 : 1.3);
     
-    // --- THE ICE FIX: CRITICAL PHYSICS ---
-    // If we are in the air (velY != 0), we aren't on ice anymore
-    if (Math.abs(player.velY) > 0.1) player.onIce = false;
-
-    let friction = player.onIce ? 0.999 : 0.7;
-    player.velX *= friction; 
+    // ICE FRICTION (EXTREME)
+    let f = player.onIce ? 0.999 : 0.7;
+    player.velX *= f;
     
     player.x += player.velX; 
     player.y += player.velY * timeScale;
@@ -233,37 +201,32 @@ function update() {
         }
     });
 
-    platforms.forEach(plat => {
-        if (player.velY > 0 && player.y + 30 > plat.y && player.y + 30 < plat.y + 15 + player.velY && 
-            player.x + 30 > plat.x && player.x < plat.x + plat.width) {
-            
-            if (plat.type === 'tramp') { 
-                player.velY = BOUNCE_FORCE; player.jumping = true; jumpCount = 1;
-                player.onIce = false;
-            } else { 
-                player.velY = 0; player.y = plat.y - 30; player.jumping = false; jumpCount = 0;
-                
-                // Set ice state ONLY here
-                player.onIce = (plat.type === 'ice');
+    // Reset ice unless colliding
+    let onIceThisFrame = false;
 
-                if (plat.type === 'conveyor') player.velX += (plat.beltDir * 4.5); 
-                if (plat.type === 'crumble') plat.isCracking = true; 
+    platforms.forEach(p => {
+        if (player.velY > 0 && player.y + 30 > p.y && player.y + 30 < p.y + 15 + player.velY && 
+            player.x + 30 > p.x && player.x < p.x + p.width) {
+            if (p.type === 'tramp') { player.velY = BOUNCE_FORCE; player.jumping = true; }
+            else {
+                player.velY = 0; player.y = p.y - 30; player.jumping = false; jumpCount = 0;
+                if (p.type === 'ice') onIceThisFrame = true;
+                if (p.type === 'conveyor') player.velX += (p.beltDir * 4);
+                if (p.type === 'crumble') p.isCracking = true;
             }
         }
-        if (plat.isCracking) plat.crackTimer -= 0.02;
-        if (plat.speed) { 
-            plat.x += plat.speed * timeScale; 
-            if (plat.x < 0 || plat.x > 320) plat.speed *= -1; 
-        }
+        if (p.speed) { p.x += p.speed; if (p.x < 0 || p.x > 320) p.speed *= -1; }
+        if (p.isCracking) p.crackTimer -= 0.02;
     });
     
+    player.onIce = onIceThisFrame;
     platforms = platforms.filter(p => p.type !== 'crumble' || p.crackTimer > 0);
 
     items.forEach(item => { 
         if (!item.collected) {
             let dist = Math.sqrt(Math.pow(player.x - item.x, 2) + Math.pow(player.y - item.y, 2));
-            if (powerupStatus.Magnet && dist < 150) {
-                item.x += (player.x - item.x) * 0.15; item.y += (player.y - item.y) * 0.15;
+            if (powerupStatus.Magnet && dist < 160) {
+                item.x += (player.x - item.x) * 0.2; item.y += (player.y - item.y) * 0.2;
             }
             if (dist < 35) {
                 item.collected = true; tokens += bgMultipliers[currentBGName] || 1; 
@@ -273,8 +236,7 @@ function update() {
     });
     
     if (player.y < cameraY + 300) cameraY = player.y - 300;
-    let ch = Math.max(0, Math.floor((500 - player.y) / 10));
-    if (ch > maxHeight) { maxHeight = ch; document.getElementById("scoreBoard").innerText = `Height: ${maxHeight}m`; }
+    maxHeight = Math.max(maxHeight, Math.floor((500 - player.y) / 10));
     if (player.y > cameraY + 750) gameOver();
     
     draw(); 
@@ -285,54 +247,53 @@ function draw() {
     ctx.clearRect(0,0, canvas.width, canvas.height);
     let grad = ctx.createLinearGradient(0, 0, 0, canvas.height);
     if (currentBGName === "White") { grad.addColorStop(0, "#fff"); grad.addColorStop(1, "#ddd"); }
-    else if (currentBGName === "Blue") { grad.addColorStop(0, "#4facfe"); grad.addColorStop(1, "#00f2fe"); }
-    else if (currentBGName === "Forest") { grad.addColorStop(0, "#134e5e"); grad.addColorStop(1, "#71b280"); }
-    else if (currentBGName === "Sunset") { grad.addColorStop(0, "#ff8c00"); grad.addColorStop(1, "#ff0080"); }
-    else if (currentBGName === "Midnight") { grad.addColorStop(0, "#232526"); grad.addColorStop(1, "#414345"); }
-    else if (currentBGName === "Space") { grad.addColorStop(0, "#0f0c29"); grad.addColorStop(1, "#24243e"); }
-    else if (currentBGName === "Gold") { grad.addColorStop(0, "#bf953f"); grad.addColorStop(1, "#fcf6ba"); }
     else if (currentBGName === "Void") { grad.addColorStop(0, "#000"); grad.addColorStop(1, "#111"); }
+    else { grad.addColorStop(0, "#222"); grad.addColorStop(1, "#000"); }
     ctx.fillStyle = grad; ctx.fillRect(0, 0, canvas.width, canvas.height);
     
     ctx.save(); ctx.translate(0, -cameraY);
     
-    // Draw Particles (Void Skin)
+    // Particles
     particles.forEach(p => {
-        ctx.globalAlpha = p.life;
-        ctx.fillStyle = p.color;
+        ctx.globalAlpha = p.life; ctx.fillStyle = p.color;
         ctx.fillRect(p.x, p.y, 4, 4);
     });
     ctx.globalAlpha = 1.0;
 
+    // Wormholes
     wormholes.forEach(wh => {
-        let pulse = 5 + Math.sin(Date.now() / 100) * 5;
-        ctx.fillStyle = "#00ffff"; ctx.shadowBlur = 15 + pulse; ctx.shadowColor = "#00ffff";
-        ctx.beginPath(); ctx.ellipse(wh.x + 20, wh.y + 20, 15 + pulse/2, 20 + pulse, 0, 0, Math.PI * 2); ctx.fill();
-        ctx.fillStyle = "white"; ctx.beginPath(); ctx.ellipse(wh.x + 20, wh.y + 20, 8, 12, 0, 0, Math.PI * 2); ctx.fill();
+        ctx.fillStyle = "#00ffff"; ctx.shadowBlur = 20; ctx.shadowColor = "#00ffff";
+        ctx.beginPath(); ctx.ellipse(wh.x + 20, wh.y + 20, 15, 25, 0, 0, Math.PI * 2); ctx.fill();
         ctx.shadowBlur = 0;
     });
 
+    // Platforms
     platforms.forEach(p => {
-        if (p.type === 'tramp') ctx.fillStyle = "#e91e63"; 
-        else if (p.type === 'conveyor') ctx.fillStyle = "#757575"; 
-        else if (p.type === 'ice') ctx.fillStyle = "#80deea"; 
-        else if (p.type === 'crumble') ctx.fillStyle = `rgb(${255 * (1-p.crackTimer)}, ${150 * p.crackTimer}, 50)`; 
+        if (p.type === 'tramp') ctx.fillStyle = "#ff4081"; 
+        else if (p.type === 'ice') ctx.fillStyle = "#b2ebf2"; 
+        else if (p.type === 'conveyor') ctx.fillStyle = "#bdbdbd";
         else ctx.fillStyle = "#455a64";
         ctx.fillRect(p.x, p.y, p.width, p.height);
     });
     
-    items.forEach(item => { if (!item.collected) { ctx.fillStyle = "#ffeb3b"; ctx.beginPath(); ctx.arc(item.x+5, item.y+5, 8, 0, Math.PI*2); ctx.fill(); } });
+    // Coins
+    items.forEach(item => { if (!item.collected) { ctx.fillStyle = "#ffd600"; ctx.beginPath(); ctx.arc(item.x+5, item.y+5, 8, 0, Math.PI*2); ctx.fill(); } });
     
-    if (playerColor === 'rainbow') { ctx.fillStyle = `hsl(${(Date.now() / 10) % 360}, 100%, 50%)`; }
-    else if (selectedSkinId === 'skin-void') {
-        let pulse = Math.abs(Math.sin(Date.now() / 500));
-        ctx.fillStyle = "#000000";
-        ctx.strokeStyle = `rgb(${160 * pulse}, 32, ${240 * pulse})`;
+    // --- PLAYER DRAWING ---
+    if (selectedSkinId === 'skin-void') {
+        let p = Math.abs(Math.sin(Date.now() / 400));
+        ctx.fillStyle = "#000";
+        ctx.strokeStyle = `rgb(${120 * p}, 0, ${200 * p})`;
         ctx.lineWidth = 4;
         ctx.fillRect(player.x, player.y, 30, 30);
         ctx.strokeRect(player.x, player.y, 30, 30);
+    } else if (playerColor === 'rainbow') {
+        ctx.fillStyle = `hsl(${(Date.now() / 10) % 360}, 100%, 50%)`;
+        ctx.fillRect(player.x, player.y, 30, 30);
+    } else {
+        ctx.fillStyle = playerColor;
+        ctx.fillRect(player.x, player.y, 30, 30);
     }
-    else { ctx.fillStyle = playerColor; ctx.fillRect(player.x, player.y, 30, 30); }
     
     ctx.restore();
 }
@@ -350,7 +311,6 @@ const setupBtn = (id, act) => {
         if (act === "Jump" && gameActive) {
             if (!player.jumping) { player.velY = JUMP_FORCE; player.jumping = true; jumpCount = 1; }
             else if (powerupStatus.DoubleJump && jumpCount < 2) { player.velY = JUMP_FORCE; jumpCount = 2; }
-            player.onIce = false; // Jumping breaks friction
         } else keys[config[act]] = true; 
     };
     btn.ontouchend = () => keys[config[act]] = false;
