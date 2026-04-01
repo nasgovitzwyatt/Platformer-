@@ -51,18 +51,29 @@
                     </button>
                 </div>
             </div>
+            <div class="shop-card">
+                <h3>Powerups</h3>
+                <div class="shop-item-list">
+                    <button class="shop-item" onclick="buyItem('pow', 'DoubleJump', 100)">
+                        <span>Double Jump</span><span class="price">100 T</span>
+                    </button>
+                    <button class="shop-item" onclick="buyItem('pow', 'Shield', 75)">
+                        <span>Shield</span><span class="price">75 T</span>
+                    </button>
+                </div>
+            </div>
         </div>
         <button id="closeShop" class="menu-btn secondary">BACK</button>
     </div>
 
     <div id="settingsModal" class="menu-screen" style="display: none;">
         <h2 class="shop-title">SETTINGS</h2>
-        <div class="settings-container">
+        <div class="settings-list">
             <div class="setting-item"><span>JUMP</span><button id="bindJump" class="bind-btn">SPACE</button></div>
             <div class="setting-item"><span>LEFT</span><button id="bindLeft" class="bind-btn">LEFT</button></div>
             <div class="setting-item"><span>RIGHT</span><button id="bindRight" class="bind-btn">RIGHT</button></div>
         </div>
-        <button id="backToMenu" class="menu-btn secondary">SAVE & BACK</button>
+        <button id="backToMenu" class="menu-btn secondary">BACK</button>
     </div>
 
     <div id="skinMenu">
