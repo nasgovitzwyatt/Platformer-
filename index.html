@@ -42,7 +42,7 @@
         <div class="shop-grid-container">
             <div class="shop-card">
                 <h3>ENVIRONMENTS</h3>
-                <div id="envList" class="shop-item-list"></div>
+                <div id="envList" class="shop-item-list scrollable"></div>
             </div>
             <div class="shop-card">
                 <h3>TECH UPGRADES</h3>
@@ -54,7 +54,7 @@
 
     <div id="skinMenu" class="menu-screen" style="display: none;">
         <h2 class="menu-title">SKIN CABINET</h2>
-        <div class="skin-container large-grid">
+        <div class="skin-glass-panel">
             <div class="skin-grid" id="skinGrid"></div>
         </div>
         <div class="pagination-row">
@@ -68,18 +68,9 @@
     <div id="settingsModal" class="menu-screen" style="display: none;">
         <h2 class="menu-title">CALIBRATION</h2>
         <div class="calibration-box">
-            <div class="setting-row">
-                <span>JUMP ACTION</span>
-                <button id="bindJump" class="bind-btn">SPACE</button>
-            </div>
-            <div class="setting-row">
-                <span>MOVE LEFT</span>
-                <button id="bindLeft" class="bind-btn">LEFT</button>
-            </div>
-            <div class="setting-row">
-                <span>MOVE RIGHT</span>
-                <button id="bindRight" class="bind-btn">RIGHT</button>
-            </div>
+            <div class="setting-row"><span>JUMP ACTION</span><button id="bindJump" class="bind-btn">SPACE</button></div>
+            <div class="setting-row"><span>MOVE LEFT</span><button id="bindLeft" class="bind-btn">LEFT</button></div>
+            <div class="setting-row"><span>MOVE RIGHT</span><button id="bindRight" class="bind-btn">RIGHT</button></div>
         </div>
         <button class="menu-btn secondary close-btn">SAVE CHANGES</button>
     </div>
