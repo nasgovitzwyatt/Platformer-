@@ -52,7 +52,7 @@ let platforms = [], items = [], particles = [], debris = [], trailParticles = []
 let player = { x: 185, y: 540, velX: 0, velY: 0, jumping: false, onIce: false, jumpCount: 0, shieldActive: false };
 let lastTime = 0;
 
-// --- NEW HAZARDS & JUICE STATE ---
+// --- HAZARDS & JUICE ---
 let shake = 0;
 let floatingTexts = [];
 let lavaActive = false, lavaY = 2000, lavaTimer = 0;
@@ -219,9 +219,8 @@ function loop(t) {
 
     if (shake > 0) shake -= 0.1 * dt;
 
-    // --- LAVA HAZARD TRIGGER ---
     if (maxHeight > 0 && maxHeight % 1000 === 0 && !lavaActive) {
-        lavaActive = true; lavaTimer = 1200; // 20 seconds @ 60fps
+        lavaActive = true; lavaTimer = 1200; 
         lavaY = cameraY + 700;
         notify("LAVA RISING! RUN!");
     }
@@ -234,7 +233,6 @@ function loop(t) {
         }
     }
 
-    // --- MISSILE LOGIC ---
     if (!missile.active && Math.random() > 0.993) {
         missile.active = true; missile.warning = true; missile.side = Math.random() > 0.5 ? 'left' : 'right';
         missile.y = player.y - 100 + (Math.random() * 200);
@@ -253,15 +251,22 @@ function loop(t) {
         }
     }
 
+    // --- FIX: ICE STATE RESET ---
+    player.onIce = false; // Reset every frame, only collisions turn it back on
+
     let grav = powerupStatus.AntiGrav ? 0.45 : 0.58;
-    let friction = player.onIce ? 0.998 : 0.82; 
+    // Friction only applies if we are actually touching a platform
+    let friction = (player.velY === 0 && player.onIce) ? 0.998 : 0.82; 
+    
+    // If we are in the air, use air friction (0.82), if on ice, use ice friction
+    if (player.onIce) friction = 0.998;
+
     if (keys[config.Left]) player.velX -= 1.1 * dt;
     if (keys[config.Right]) player.velX += 1.1 * dt;
     player.velX *= Math.pow(friction, dt);
     player.x += player.velX * dt; player.y += player.velY * dt; player.velY += grav * dt;
     if (player.x < -30) player.x = 400; if (player.x > 400) player.x = -30;
 
-    // --- ENHANCED COMET TRAIL ---
     if (selectedSkin.type === 'trail' && Math.random() > 0.3) {
         trailParticles.push({ x: player.x + 15, y: player.y + 15, vx: (Math.random()-0.5) * 2, vy: (Math.random()-0.5) * 2, life: 1.0, color: selectedSkin.val });
     }
@@ -271,7 +276,8 @@ function loop(t) {
         if (player.velY > 0 && player.y + 30 > p.y && player.y + 30 < p.y + 20 + player.velY && player.x + 30 > p.x && player.x < p.x + p.width) {
             if (p.type === 'tramp') { player.velY = -28; player.jumpCount = 1; shake = 1.5; }
             else { 
-                player.velY = 0; player.y = p.y - 30; player.jumpCount = 0; player.onIce = (p.type === 'ice');
+                player.velY = 0; player.y = p.y - 30; player.jumpCount = 0; 
+                if (p.type === 'ice') player.onIce = true; // Turn ice state on
                 if (p.type === 'conveyor') player.velX += 4 * dt;
                 if (p.type === 'crumble') p.isCracking = true;
                 if (p.moving) player.x += p.dir * p.speed * dt;
@@ -305,7 +311,6 @@ function loop(t) {
         }
     });
 
-    // Cleanup and Physics update
     particles.forEach(p => { p.x += p.vx; p.y += p.vy; p.vy += 0.2; p.life -= 0.02; });
     particles = particles.filter(p => p.life > 0);
     trailParticles.forEach(tp => { tp.life -= 0.04; tp.x += tp.vx; tp.y += tp.vy; });
@@ -352,7 +357,6 @@ function draw() {
         ctx.fillRect(p.x, p.y, p.width, p.height);
     });
 
-    // Hazards: Lava and Missile
     if (lavaActive) {
         ctx.fillStyle = "rgba(255, 40, 0, 0.8)"; ctx.fillRect(0, lavaY, 400, 1000);
         ctx.fillStyle = "#fff"; ctx.fillRect(0, lavaY, 400, 4);
@@ -380,7 +384,6 @@ function draw() {
     ctx.fillStyle = "#ffd700";
     items.forEach(it => { if(!it.collected) { ctx.beginPath(); ctx.arc(it.x, it.y, 8, 0, Math.PI*2); ctx.fill(); } });
     
-    // Player
     ctx.globalAlpha = powerupStatus.GhostMode ? 0.5 : 1.0;
     let pX = player.x, pY = player.y;
     if (selectedSkin.type === 'glitch' && Math.random() > 0.9) pX += (Math.random()-0.5)*12;
@@ -407,6 +410,7 @@ document.getElementById("startBtn").onclick = () => init();
 document.getElementById("shopBtn").onclick = () => showMenu('shop');
 document.getElementById("skinMenuBtn").onclick = () => showMenu('skins');
 document.getElementById("settingsBtn").onclick = () => showMenu('settings');
+document.getElementById("leaderboardBtn").onclick = () => alert("Global Leaderboard: Syncing Elite Data...");
 document.querySelectorAll(".close-btn").forEach(b => b.onclick = () => showMenu('main'));
 document.getElementById("jumpBtn").ontouchstart = (e) => { e.preventDefault(); handleJump(); };
 
