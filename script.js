@@ -10,7 +10,7 @@ const menus = {
     mobile: document.getElementById("mobileControls")
 };
 
-// --- ELITE SKINS DATA (EXOTIC UPDATED) ---
+// --- EXOTIC SKINS DATA ---
 const skinData = [
     {id: 's0', n: 'Red', val: '#ff0000', req: 50, type: 'color'},
     {id: 's1', n: 'Blue', val: '#0000ff', req: 100, type: 'color'},
@@ -21,19 +21,19 @@ const skinData = [
     {id: 's6', n: 'Gold', val: '#ffd700', req: 350, type: 'color'},
     {id: 's7', n: 'Rainbow', val: 'rainbow', req: 400, type: 'pattern'},
     {id: 's8', n: 'Space', val: '#1a1a2e', req: 450, type: 'pattern'},
-    {id: 's9', n: 'Foggy', val: 'rgba(255,255,255,0.2)', req: 500, type: 'glass'}, // FIXED TRANSPARENT
+    {id: 's9', n: 'Foggy', val: 'rgba(255,255,255,0.2)', req: 500, type: 'glass'},
     {id: 's10', n: 'Ocean', val: '#0077be', req: 550, type: 'color'},
     {id: 's11', n: 'Gradient', val: 'linear-gradient', req: 600, type: 'pattern'},
     {id: 's12', n: 'Void', val: 'void', req: 700, type: 'pattern'},
-    {id: 's13', n: 'Comet', val: '#00ffff', req: 1000, type: 'trail'}, // EXOTIC
-    {id: 's14', n: 'Inferno', val: '#ff4500', req: 1500, type: 'trail'}, // EXOTIC
-    {id: 's15', n: 'Ghost', val: 'rgba(150,150,255,0.4)', req: 2000, type: 'trail'} // EXOTIC
+    {id: 's13', n: 'Comet', val: '#00ffff', req: 1000, type: 'trail'},
+    {id: 's14', n: 'Phoenix', val: '#ff4500', req: 2500, type: 'trail'}, // NEW
+    {id: 's15', n: 'Abyss', val: '#4b0082', req: 3500, type: 'trail'},   // NEW
+    {id: 's16', n: 'Cyber', val: '#39ff14', req: 5000, type: 'glitch'}  // NEW
 ];
 
 const envs = [
     {n:'White', m:1, p:0}, {n:'Blue', m:2.5, p:50}, {n:'Forest', m:5, p:100}, 
-    {n:'Lava', m:8, p:200}, {n:'Neon', m:15, p:350}, {n:'Void', m:50, p:500},
-    {n:'Mars', m:75, p:1000}, {n:'Cyber', m:100, p:2500}
+    {n:'Lava', m:8, p:200}, {n:'Neon', m:15, p:350}, {n:'Void', m:50, p:500}
 ];
 
 // --- STATE ---
@@ -51,7 +51,7 @@ let envMultiplier = 1;
 let powerupStatus = JSON.parse(localStorage.getItem("powerups")) || { DoubleJump: false, Magnet: false, AntiGrav: false, GhostMode: false, Shield: false };
 let ownedItems = JSON.parse(localStorage.getItem("ownedItems")) || ["bg-White"];
 
-let platforms = [], items = [], particles = [], debris = [], trailParticles = [], keys = {}, gameActive = false, cameraY = 0, maxHeight = 0;
+let platforms = [], items = [], particles = [], debris = [], trailParticles = [], weatherParticles = [], keys = {}, gameActive = false, cameraY = 0, maxHeight = 0;
 let player = { x: 185, y: 540, velX: 0, velY: 0, jumping: false, onIce: false, jumpCount: 0, shieldActive: false };
 let lastTime = 0;
 
@@ -75,14 +75,10 @@ function showMenu(key) {
     if (key === 'shop') renderShop();
 }
 
-// --- CALIBRATION FIX ---
+// --- CALIBRATION ---
 ['Jump','Left','Right'].forEach(act => {
     const btn = document.getElementById(`bind${act}`);
-    btn.onclick = (e) => {
-        e.stopPropagation();
-        bindingKey = act;
-        btn.innerText = "WAITING...";
-    };
+    if(btn) btn.onclick = (e) => { e.stopPropagation(); bindingKey = act; btn.innerText = "WAITING..."; };
 });
 
 window.addEventListener("keydown", (e) => {
@@ -100,15 +96,19 @@ window.addEventListener("keydown", (e) => {
 window.addEventListener("keyup", (e) => keys[e.code] = false);
 
 function updateSettingsUI() {
-    document.getElementById("bindJump").innerText = config.Jump.toUpperCase().replace("KEY","").replace("ARROW","");
-    document.getElementById("bindLeft").innerText = config.Left.toUpperCase().replace("KEY","").replace("ARROW","");
-    document.getElementById("bindRight").innerText = config.Right.toUpperCase().replace("KEY","").replace("ARROW","");
+    const bj = document.getElementById("bindJump");
+    const bl = document.getElementById("bindLeft");
+    const br = document.getElementById("bindRight");
+    if(bj) bj.innerText = config.Jump.toUpperCase().replace("KEY","").replace("ARROW","");
+    if(bl) bl.innerText = config.Left.toUpperCase().replace("KEY","").replace("ARROW","");
+    if(br) br.innerText = config.Right.toUpperCase().replace("KEY","").replace("ARROW","");
 }
 
-// --- SHOP PAGINATION FIX ---
+// --- SHOP & SKINS ---
 function renderShop() {
     const envList = document.getElementById("envList");
     const techList = document.getElementById("techList");
+    if(!envList || !techList) return;
     envList.innerHTML = ""; techList.innerHTML = "";
     
     const start = currentEnvPage * envsPerPage;
@@ -123,7 +123,8 @@ function renderShop() {
         envList.appendChild(btn);
     });
     
-    document.getElementById("envPageNum").innerText = `${currentEnvPage + 1}/${Math.ceil(envs.length/envsPerPage)}`;
+    const ep = document.getElementById("envPageNum");
+    if(ep) ep.innerText = `${currentEnvPage + 1}/${Math.ceil(envs.length/envsPerPage)}`;
 
     const techs = [
         {id:'DoubleJump', n:'Double Jump', p:150}, 
@@ -142,15 +143,14 @@ function renderShop() {
     });
 }
 
-document.getElementById("nextEnvPage").onclick = () => {
-    if ((currentEnvPage + 1) * envsPerPage < envs.length) { currentEnvPage++; renderShop(); }
-};
-document.getElementById("prevEnvPage").onclick = () => {
-    if (currentEnvPage > 0) { currentEnvPage--; renderShop(); }
-};
+const ne = document.getElementById("nextEnvPage");
+const pe = document.getElementById("prevEnvPage");
+if(ne) ne.onclick = () => { if ((currentEnvPage + 1) * envsPerPage < envs.length) { currentEnvPage++; renderShop(); } };
+if(pe) pe.onclick = () => { if (currentEnvPage > 0) { currentEnvPage--; renderShop(); } };
 
 function renderSkins() {
     const grid = document.getElementById("skinGrid");
+    if(!grid) return;
     grid.innerHTML = "";
     const start = currentSkinPage * skinsPerPage;
     const pageSkins = skinData.slice(start, start + skinsPerPage);
@@ -167,15 +167,14 @@ function renderSkins() {
         btn.onclick = () => { if(!locked) { selectedSkin = s; renderSkins(); } };
         grid.appendChild(btn);
     });
-    document.getElementById("skinPageNum").innerText = `PAGE ${currentSkinPage + 1}`;
+    const sp = document.getElementById("skinPageNum");
+    if(sp) sp.innerText = `PAGE ${currentSkinPage + 1}`;
 }
 
-document.getElementById("nextSkinPage").onclick = () => {
-    if ((currentSkinPage + 1) * skinsPerPage < skinData.length) { currentSkinPage++; renderSkins(); }
-};
-document.getElementById("prevSkinPage").onclick = () => {
-    if (currentSkinPage > 0) { currentSkinPage--; renderSkins(); }
-};
+const ns = document.getElementById("nextSkinPage");
+const ps = document.getElementById("prevSkinPage");
+if(ns) ns.onclick = () => { if ((currentSkinPage + 1) * skinsPerPage < skinData.length) { currentSkinPage++; renderSkins(); } };
+if(ps) ps.onclick = () => { if (currentSkinPage > 0) { currentSkinPage--; renderSkins(); } };
 
 window.buyItem = function(type, name, price) {
     const id = `${type}-${name}`;
@@ -198,7 +197,7 @@ window.buyItem = function(type, name, price) {
 
 // --- ENGINE ---
 function init() {
-    platforms = []; items = []; debris = []; particles = []; trailParticles = []; maxHeight = 0;
+    platforms = []; items = []; debris = []; particles = []; trailParticles = []; weatherParticles = []; maxHeight = 0;
     platforms.push({ x: -100, y: 580, width: 600, height: 100, type: 'normal', moving: false, crack: 1 });
     player = { x: 185, y: 500, velX: 0, velY: 0, jumping: false, onIce: false, jumpCount: 0, shieldActive: powerupStatus.Shield };
     cameraY = 0;
@@ -212,17 +211,16 @@ function init() {
         let r = Math.random();
         if (r > 0.90) type = 'tramp';
         else if (r > 0.80) type = 'ice';
-        else if (r > 0.70) type = 'conveyor'; // NEW CONVEYOR
+        else if (r > 0.70) type = 'conveyor';
         else if (r > 0.55) type = 'crumble';
 
-        let plat = { 
+        platforms.push({ 
             x: Math.random() * (400 - width), y: lastY, width: width, height: 14, 
             type: type, moving: Math.random() < (diff * 0.8),
             dir: Math.random() > 0.5 ? 1 : -1, speed: 1 + (diff * 3.5),
             crack: 1, isCracking: false
-        };
-        platforms.push(plat);
-        if (Math.random() < 0.40) items.push({ x: plat.x + (plat.width/2) - 8, y: plat.y - 30, collected: false });
+        });
+        if (Math.random() < 0.40) items.push({ x: platforms[platforms.length-1].x + (width/2) - 8, y: lastY - 30, collected: false });
     }
     gameActive = true; showMenu('none'); 
     lastTime = performance.now();
@@ -234,8 +232,22 @@ function loop(t) {
     const dt = Math.min((t - lastTime) / 16.67, 1.5);
     lastTime = t;
 
+    // --- WEATHER LOGIC ---
+    if (activeEnv === 'Forest' || activeEnv === 'Blue') {
+        if (Math.random() > 0.8) {
+            weatherParticles.push({
+                x: Math.random() * 400, y: cameraY - 20,
+                vy: activeEnv === 'Forest' ? 8 : 2, // Rain is fast, snow is slow
+                vx: (Math.random() - 0.5) * 2,
+                size: activeEnv === 'Forest' ? 1 : 3,
+                type: activeEnv === 'Forest' ? 'rain' : 'snow'
+            });
+        }
+    }
+
     let grav = powerupStatus.AntiGrav ? 0.45 : 0.58;
-    let friction = player.onIce ? 0.98 : 0.82;
+    // --- REDUCED ICE FRICTION ---
+    let friction = player.onIce ? 0.998 : 0.82; 
     
     if (keys[config.Left]) player.velX -= 1.1 * dt;
     if (keys[config.Right]) player.velX += 1.1 * dt;
@@ -244,11 +256,11 @@ function loop(t) {
 
     if (player.x < -30) player.x = 400; if (player.x > 400) player.x = -30;
 
-    // Trail Particles for Exotic Skins
-    if (selectedSkin.type === 'trail' && Math.random() > 0.5) {
+    // Exotic Trail Skins
+    if (selectedSkin.type === 'trail' && Math.random() > 0.4) {
         trailParticles.push({
             x: player.x + 15, y: player.y + 15,
-            vx: (Math.random()-0.5), vy: (Math.random()-0.5),
+            vx: (Math.random()-0.5) * 2, vy: (Math.random()-0.5) * 2,
             life: 1.0, color: selectedSkin.val
         });
     }
@@ -265,7 +277,7 @@ function loop(t) {
             else { 
                 player.velY = 0; player.y = p.y - 30; player.jumpCount = 0; 
                 onIce = (p.type === 'ice');
-                if (p.type === 'conveyor') player.velX += 4 * dt; // CONVEYOR FORCE
+                if (p.type === 'conveyor') player.velX += 4 * dt;
                 if (p.type === 'crumble') p.isCracking = true;
                 if (p.moving) player.x += p.dir * p.speed * dt;
             }
@@ -282,7 +294,10 @@ function loop(t) {
     platforms = platforms.filter(p => p.crack > 0);
     debris.forEach(d => { d.x += d.vx; d.y += d.vy; d.vy += 0.2; d.rot += d.vr; });
     trailParticles.forEach(tp => { tp.x += tp.vx; tp.y += tp.vy; tp.life -= 0.03; });
+    weatherParticles.forEach(wp => { wp.y += wp.vy; wp.x += wp.vx; });
+    
     trailParticles = trailParticles.filter(tp => tp.life > 0);
+    weatherParticles = weatherParticles.filter(wp => wp.y < cameraY + 650);
 
     items.forEach(it => {
         if (!it.collected) {
@@ -312,28 +327,48 @@ function loop(t) {
 
 function draw() {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
-    const bgs = { White: "#fdfdfd", Blue: "#e3f2fd", Forest: "#e8f5e9", Lava: "#3e2723", Neon: "#1a1a2e", Void: "#000", Mars: "#5d4037", Cyber: "#001a1a" };
+    
+    // --- ANIMATED ENVIRONMENTS ---
+    const bgs = { 
+        White: "#fdfdfd", Blue: "#e3f2fd", Forest: "#e8f5e9", Lava: "#3e2723", 
+        Neon: "#1a1a2e", Void: "#000", Mars: "#5d4037", Cyber: "#001a1a" 
+    };
     ctx.fillStyle = bgs[activeEnv];
     ctx.fillRect(0,0,400,600);
 
+    // Neon Gradient effect
+    if (activeEnv === 'Neon' || activeEnv === 'Void') {
+        let grad = ctx.createRadialGradient(200, 300, 0, 200, 300, 400);
+        grad.addColorStop(0, "rgba(255,255,255,0.05)");
+        grad.addColorStop(1, "rgba(0,0,0,0)");
+        ctx.fillStyle = grad;
+        ctx.fillRect(0,0,400,600);
+    }
+
     ctx.save(); ctx.translate(0, -cameraY);
     
+    // Draw Weather
+    weatherParticles.forEach(wp => {
+        ctx.fillStyle = wp.type === 'rain' ? "#aab" : "#fff";
+        ctx.fillRect(wp.x, wp.y, wp.size, wp.size * (wp.type === 'rain' ? 5 : 1));
+    });
+
     platforms.forEach(p => {
         if (p.type === 'ice') ctx.fillStyle = "#00d2ff";
         else if (p.type === 'tramp') ctx.fillStyle = "#ff1744";
-        else if (p.type === 'conveyor') ctx.fillStyle = "#888888"; // GREY CONVEYOR
+        else if (p.type === 'conveyor') {
+            ctx.fillStyle = "#888888";
+            ctx.fillRect(p.x, p.y, p.width, p.height);
+            ctx.fillStyle = "rgba(255,255,255,0.2)";
+            for(let i=0; i<p.width; i+=20) ctx.fillRect(p.x + ((i + Date.now()/15)%p.width), p.y + 4, 10, 6);
+            return;
+        }
         else if (p.type === 'crumble') {
             const r = 255 * (1 - p.crack), g = 255 * p.crack;
             ctx.fillStyle = `rgb(${r},${g},0)`;
         }
         else ctx.fillStyle = "#333";
         ctx.fillRect(p.x, p.y, p.width, p.height);
-        
-        // Conveyor visual arrows
-        if (p.type === 'conveyor') {
-            ctx.fillStyle = "rgba(255,255,255,0.3)";
-            for(let i=0; i<p.width; i+=20) ctx.fillRect(p.x + ((i + Date.now()/20)%p.width), p.y + 4, 10, 6);
-        }
     });
 
     debris.forEach(d => {
@@ -352,21 +387,33 @@ function draw() {
     items.forEach(it => { if(!it.collected) { ctx.beginPath(); ctx.arc(it.x, it.y, 8, 0, Math.PI*2); ctx.fill(); } });
     
     // Player Render
+    let pX = player.x, pY = player.y;
+    // Cyber Glitch effect
+    if (selectedSkin.type === 'glitch' && Math.random() > 0.9) {
+        pX += (Math.random() - 0.5) * 10;
+        ctx.fillStyle = "rgba(255,0,255,0.5)";
+        ctx.fillRect(pX + 5, pY, 30, 30);
+    }
+
     ctx.globalAlpha = powerupStatus.GhostMode ? 0.5 : 1.0;
     if (selectedSkin.type === 'glass') {
         ctx.fillStyle = selectedSkin.val;
-        ctx.fillRect(player.x, player.y, 30, 30);
+        ctx.fillRect(pX, pY, 30, 30);
         ctx.strokeStyle = "white"; ctx.lineWidth = 2;
-        ctx.strokeRect(player.x, player.y, 30, 30); // BORDER FOR GLASS
+        ctx.strokeRect(pX, pY, 30, 30);
     } else if (selectedSkin.val === 'rainbow') {
         ctx.fillStyle = `hsl(${Date.now()/10%360}, 100%, 50%)`;
-        ctx.fillRect(player.x, player.y, 30, 30);
+        ctx.fillRect(pX, pY, 30, 30);
     } else if (selectedSkin.val === 'void') {
-        ctx.fillStyle = "black"; ctx.fillRect(player.x, player.y, 30, 30);
-        ctx.strokeStyle = "white"; ctx.lineWidth = 2; ctx.strokeRect(player.x, player.y, 30, 30);
+        ctx.fillStyle = "black"; ctx.fillRect(pX, pY, 30, 30);
+        ctx.strokeStyle = "white"; ctx.lineWidth = 2; ctx.strokeRect(pX, pY, 30, 30);
+    } else if (selectedSkin.val === 'linear-gradient') {
+        let g = ctx.createLinearGradient(pX, pY, pX+30, pY+30);
+        g.addColorStop(0, "#ff0080"); g.addColorStop(1, "#00baff");
+        ctx.fillStyle = g; ctx.fillRect(pX, pY, 30, 30);
     } else {
         ctx.fillStyle = selectedSkin.val;
-        ctx.fillRect(player.x, player.y, 30, 30);
+        ctx.fillRect(pX, pY, 30, 30);
     }
     ctx.globalAlpha = 1.0;
     
