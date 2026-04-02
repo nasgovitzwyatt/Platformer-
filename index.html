@@ -8,7 +8,7 @@
 </head>
 <body>
     <div id="ui">
-        <div id="tokenBoard">🪙 50</div>
+        <div id="tokenBoard">🪙 0</div>
         <div id="scoreBoard">0m</div>
         <div id="highScoreBoard">🏆 0m</div>
     </div>
@@ -19,10 +19,10 @@
 
     <div class="controls" id="mobileControls">
         <div class="dir-pad">
-            <button class="control-btn" id="leftBtn">←</button>
-            <button class="control-btn" id="rightBtn">→</button>
+            <button class="control-btn" id="leftBtn">L</button>
+            <button class="control-btn" id="rightBtn">R</button>
         </div>
-        <button class="control-btn jump-btn" id="jumpBtn">UP</button>
+        <button class="control-btn jump-btn" id="jumpBtn">JUMP</button>
     </div>
 
     <div id="mainMenu" class="menu-screen">
@@ -61,7 +61,14 @@
 
     <div id="skinMenu" class="menu-screen" style="display: none;">
         <h2 class="menu-title">SKIN CABINET</h2>
-        <div class="skin-grid" id="skinGrid"></div>
+        <div class="skin-pagination-wrapper">
+            <div class="skin-grid" id="skinGrid"></div>
+        </div>
+        <div class="pagination-controls">
+            <button id="prevSkinPage" class="nav-btn">PREV</button>
+            <span id="skinPageNum">PAGE 1</span>
+            <button id="nextSkinPage" class="nav-btn">NEXT</button>
+        </div>
         <button class="menu-btn secondary close-btn">RETURN</button>
     </div>
 
