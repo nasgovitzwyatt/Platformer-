@@ -27,7 +27,9 @@
 
     <div id="mainMenu" class="menu-screen">
         <div class="menu-content">
-            <h1 class="game-title elite-glow">CUBE<br><span class="highlight">PARKOUR PRO</span></h1>
+            <div class="title-wrapper">
+                <h1 class="game-title elite-glow">CUBE<br><span class="highlight">PARKOUR PRO</span></h1>
+            </div>
             <div class="menu-buttons">
                 <button id="startBtn" class="menu-btn primary">LAUNCH SESSION</button>
                 <button id="shopBtn" class="menu-btn shop-gold">ELITE STORE</button>
@@ -57,10 +59,10 @@
         <div class="skin-container large-grid">
             <div class="skin-grid" id="skinGrid"></div>
         </div>
-        <div class="pagination-controls">
-            <button id="prevSkinPage" class="nav-btn">← PREV</button>
+        <div class="pagination-row">
+            <button id="prevSkinPage" class="p-btn">PREV</button>
             <span id="skinPageNum">PAGE 1</span>
-            <button id="nextSkinPage" class="nav-btn">NEXT →</button>
+            <button id="nextSkinPage" class="p-btn">NEXT</button>
         </div>
         <button class="menu-btn secondary close-btn">RETURN</button>
     </div>
@@ -68,18 +70,9 @@
     <div id="settingsModal" class="menu-screen" style="display: none;">
         <h2 class="menu-title">CALIBRATION</h2>
         <div class="calibration-box">
-            <div class="setting-row">
-                <span>JUMP</span>
-                <button id="bindJump" class="bind-btn">SPACE</button>
-            </div>
-            <div class="setting-row">
-                <span>LEFT</span>
-                <button id="bindLeft" class="bind-btn">LEFT</button>
-            </div>
-            <div class="setting-row">
-                <span>RIGHT</span>
-                <button id="bindRight" class="bind-btn">RIGHT</button>
-            </div>
+            <div class="setting-row"><span>JUMP</span><button id="bindJump" class="bind-btn">SPACE</button></div>
+            <div class="setting-row"><span>LEFT</span><button id="bindLeft" class="bind-btn">LEFT</button></div>
+            <div class="setting-row"><span>RIGHT</span><button id="bindRight" class="bind-btn">RIGHT</button></div>
         </div>
         <button class="menu-btn secondary close-btn">SAVE CHANGES</button>
     </div>
