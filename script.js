@@ -135,11 +135,6 @@ function renderShop() {
     });
 }
 
-const ne = document.getElementById("nextEnvPage");
-const pe = document.getElementById("prevEnvPage");
-if(ne) ne.onclick = () => { if ((currentEnvPage + 1) * envsPerPage < envs.length) { currentEnvPage++; renderShop(); } };
-if(pe) pe.onclick = () => { if (currentEnvPage > 0) { currentEnvPage--; renderShop(); } };
-
 function renderSkins() {
     const grid = document.getElementById("skinGrid");
     if(!grid) return;
@@ -197,10 +192,11 @@ function init() {
         let width = 85 - (diff * 40);
         let type = 'normal';
         let r = Math.random();
+        // GENERATION WITH TRAMPOLINES RESTORED
         if (r > 0.90) type = 'tramp';
-        else if (r > 0.80) type = 'ice';
-        else if (r > 0.70) type = 'conveyor';
-        else if (r > 0.55) type = 'crumble';
+        else if (r > 0.82) type = 'ice';
+        else if (r > 0.73) type = 'conveyor';
+        else if (r > 0.58) type = 'crumble';
         platforms.push({ 
             x: Math.random() * (400 - width), y: lastY, width: width, height: 14, 
             type: type, moving: Math.random() < (diff * 0.8),
@@ -233,7 +229,8 @@ function loop(t) {
         }
     }
 
-    if (!missile.active && Math.random() > 0.993) {
+    // BALANCED MISSILE SPAWN (Rarer)
+    if (!missile.active && Math.random() > 0.997) {
         missile.active = true; missile.warning = true; missile.side = Math.random() > 0.5 ? 'left' : 'right';
         missile.y = player.y - 100 + (Math.random() * 200);
         setTimeout(() => { 
@@ -251,33 +248,21 @@ function loop(t) {
         }
     }
 
-    // --- FIX: ICE STATE RESET ---
-    player.onIce = false; // Reset every frame, only collisions turn it back on
-
-    let grav = powerupStatus.AntiGrav ? 0.45 : 0.58;
-    // Friction only applies if we are actually touching a platform
-    let friction = (player.velY === 0 && player.onIce) ? 0.998 : 0.82; 
-    
-    // If we are in the air, use air friction (0.82), if on ice, use ice friction
-    if (player.onIce) friction = 0.998;
-
-    if (keys[config.Left]) player.velX -= 1.1 * dt;
-    if (keys[config.Right]) player.velX += 1.1 * dt;
-    player.velX *= Math.pow(friction, dt);
-    player.x += player.velX * dt; player.y += player.velY * dt; player.velY += grav * dt;
-    if (player.x < -30) player.x = 400; if (player.x > 400) player.x = -30;
-
-    if (selectedSkin.type === 'trail' && Math.random() > 0.3) {
-        trailParticles.push({ x: player.x + 15, y: player.y + 15, vx: (Math.random()-0.5) * 2, vy: (Math.random()-0.5) * 2, life: 1.0, color: selectedSkin.val });
-    }
+    // RESET ICE STATE EVERY FRAME
+    let touchingPlatform = false;
+    let currentlyOnIce = false;
 
     platforms.forEach(p => {
         if (p.moving) { p.x += p.dir * p.speed * dt; if (p.x <= 0 || p.x + p.width >= 400) p.dir *= -1; }
+        
+        // COLLISION CHECK
         if (player.velY > 0 && player.y + 30 > p.y && player.y + 30 < p.y + 20 + player.velY && player.x + 30 > p.x && player.x < p.x + p.width) {
-            if (p.type === 'tramp') { player.velY = -28; player.jumpCount = 1; shake = 1.5; }
-            else { 
+            if (p.type === 'tramp') { 
+                player.velY = -28; player.jumpCount = 1; shake = 1.5; 
+            } else { 
                 player.velY = 0; player.y = p.y - 30; player.jumpCount = 0; 
-                if (p.type === 'ice') player.onIce = true; // Turn ice state on
+                touchingPlatform = true;
+                if (p.type === 'ice') currentlyOnIce = true;
                 if (p.type === 'conveyor') player.velX += 4 * dt;
                 if (p.type === 'crumble') p.isCracking = true;
                 if (p.moving) player.x += p.dir * p.speed * dt;
@@ -295,6 +280,22 @@ function loop(t) {
             }
         }
     });
+
+    player.onIce = (touchingPlatform && currentlyOnIce);
+    let grav = powerupStatus.AntiGrav ? 0.45 : 0.58;
+    
+    // ADJUSTED FRICTION (0.9992 is very slick)
+    let friction = player.onIce ? 0.9992 : 0.82; 
+
+    if (keys[config.Left]) player.velX -= 1.1 * dt;
+    if (keys[config.Right]) player.velX += 1.1 * dt;
+    player.velX *= Math.pow(friction, dt);
+    player.x += player.velX * dt; player.y += player.velY * dt; player.velY += grav * dt;
+    if (player.x < -30) player.x = 400; if (player.x > 400) player.x = -30;
+
+    if (selectedSkin.type === 'trail' && Math.random() > 0.3) {
+        trailParticles.push({ x: player.x + 15, y: player.y + 15, vx: (Math.random()-0.5) * 2, vy: (Math.random()-0.5) * 2, life: 1.0, color: selectedSkin.val });
+    }
 
     items.forEach(it => {
         if (!it.collected) {
@@ -346,7 +347,8 @@ function draw() {
         if (p.type === 'ice') ctx.fillStyle = "#00d2ff";
         else if (p.type === 'tramp') ctx.fillStyle = "#ff1744";
         else if (p.type === 'conveyor') {
-            ctx.fillStyle = "#888"; ctx.fillRect(p.x, p.y, p.width, p.height);
+            ctx.fillStyle = "#888888";
+            ctx.fillRect(p.x, p.y, p.width, p.height);
             ctx.fillStyle = "rgba(255,255,255,0.2)";
             for(let i=0; i<p.width; i+=20) ctx.fillRect(p.x + ((i + Date.now()/15)%p.width), p.y + 4, 10, 6);
             return;
@@ -410,7 +412,6 @@ document.getElementById("startBtn").onclick = () => init();
 document.getElementById("shopBtn").onclick = () => showMenu('shop');
 document.getElementById("skinMenuBtn").onclick = () => showMenu('skins');
 document.getElementById("settingsBtn").onclick = () => showMenu('settings');
-document.getElementById("leaderboardBtn").onclick = () => alert("Global Leaderboard: Syncing Elite Data...");
 document.querySelectorAll(".close-btn").forEach(b => b.onclick = () => showMenu('main'));
 document.getElementById("jumpBtn").ontouchstart = (e) => { e.preventDefault(); handleJump(); };
 
