@@ -39,36 +39,22 @@
 
     <div id="shopMenu" class="menu-screen" style="display: none;">
         <h2 class="menu-title">ELITE STORE</h2>
-        <div class="shop-container">
-            <div class="shop-section">
+        <div class="shop-grid-container">
+            <div class="shop-card">
                 <h3>ENVIRONMENTS</h3>
-                <div class="shop-list scrollable">
-                    <div class="shop-item-card" onclick="buyItem('bg', 'White', 0)">
-                        <span>White (1x)</span> <span class="price">OWNED</span>
-                    </div>
-                    <div class="shop-item-card" onclick="buyItem('bg', 'Blue', 50)">
-                        <span>Blue (1.2x)</span> <span class="price">50</span>
-                    </div>
-                    <div class="shop-item-card" onclick="buyItem('bg', 'Forest', 100)">
-                        <span>Forest (1.5x)</span> <span class="price">100</span>
-                    </div>
-                    <div class="shop-item-card" onclick="buyItem('bg', 'Midnight', 250)">
-                        <span>Midnight (3x)</span> <span class="price">250</span>
-                    </div>
-                    <div class="shop-item-card" onclick="buyItem('bg', 'Void', 500)">
-                        <span>Void (10x)</span> <span class="price">500</span>
-                    </div>
+                <div class="shop-item-list scrollable">
+                    <button class="shop-item" onclick="buyItem('bg', 'White', 0)">White (1x) <span class="price">OWNED</span></button>
+                    <button class="shop-item" onclick="buyItem('bg', 'Blue', 50)">Blue (1.2x) <span class="price">50</span></button>
+                    <button class="shop-item" onclick="buyItem('bg', 'Forest', 100)">Forest (1.5x) <span class="price">100</span></button>
+                    <button class="shop-item" onclick="buyItem('bg', 'Midnight', 250)">Midnight (3x) <span class="price">250</span></button>
+                    <button class="shop-item" onclick="buyItem('bg', 'Void', 500)">Void (10x) <span class="price">500</span></button>
                 </div>
             </div>
-            <div class="shop-section">
+            <div class="shop-card">
                 <h3>TECH UPGRADES</h3>
-                <div class="shop-list">
-                    <div class="shop-item-card" onclick="buyItem('pow', 'DoubleJump', 150)">
-                        <span>Double Jump</span> <span class="price">150</span>
-                    </div>
-                    <div class="shop-item-card" onclick="buyItem('pow', 'Magnet', 200)">
-                        <span>Token Magnet</span> <span class="price">200</span>
-                    </div>
+                <div class="shop-item-list">
+                    <button class="shop-item" onclick="buyItem('pow', 'DoubleJump', 150)">Double Jump <span class="price">150</span></button>
+                    <button class="shop-item" onclick="buyItem('pow', 'Magnet', 200)">Token Magnet <span class="price">200</span></button>
                 </div>
             </div>
         </div>
@@ -90,12 +76,21 @@
 
     <div id="settingsModal" class="menu-screen" style="display: none;">
         <h2 class="menu-title">CALIBRATION</h2>
-        <div class="settings-list">
-            <div class="setting-item"><span>JUMP</span><button id="bindJump" class="bind-btn">SPACE</button></div>
-            <div class="setting-item"><span>LEFT</span><button id="bindLeft" class="bind-btn">LEFT</button></div>
-            <div class="setting-item"><span>RIGHT</span><button id="bindRight" class="bind-btn">RIGHT</button></div>
+        <div class="calibration-box">
+            <div class="setting-row">
+                <label>JUMP ACTION</label>
+                <button id="bindJump" class="bind-btn">SPACE</button>
+            </div>
+            <div class="setting-row">
+                <label>MOVE LEFT</label>
+                <button id="bindLeft" class="bind-btn">LEFT</button>
+            </div>
+            <div class="setting-row">
+                <label>MOVE RIGHT</label>
+                <button id="bindRight" class="bind-btn">RIGHT</button>
+            </div>
         </div>
-        <button class="menu-btn secondary close-btn">RETURN</button>
+        <button class="menu-btn secondary close-btn">SAVE & RETURN</button>
     </div>
 
     <script src="script.js"></script>
