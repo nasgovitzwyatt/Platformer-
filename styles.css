@@ -1,6 +1,6 @@
 :root { 
-    --primary: #ff5722; 
-    --primary-glow: rgba(255, 87, 34, 0.4);
+    --primary: #ff1100; 
+    --primary-glow: rgba(255, 17, 0, 0.7);
     --gold: #ffc107; 
     --bg-dark: #050508;
     --card: #111116;
@@ -20,51 +20,55 @@ body {
 
 canvas { background: #000; border: 3px solid #1a1a1a; border-radius: 12px; }
 
-/* CONTROLS */
-.controls { position: fixed; bottom: 30px; width: 92%; max-width: 500px; display: flex; justify-content: space-between; align-items: center; z-index: 100; pointer-events: none; }
-.dir-pad { display: flex; gap: 15px; pointer-events: auto; }
-.control-btn { pointer-events: auto; width: 65px; height: 65px; border-radius: 12px; background: rgba(255,255,255,0.07); color: white; border: 1px solid rgba(255,255,255,0.2); font-size: 18px; font-weight: bold; backdrop-filter: blur(10px); transition: 0.1s; }
-.control-btn:active { background: rgba(255,255,255,0.2); transform: scale(0.92); }
-.jump-btn { width: 90px; height: 90px; border-radius: 50%; background: var(--primary); box-shadow: 0 0 25px var(--primary-glow); border: none; }
+/* GLOWING RED TITLE */
+.elite-glow {
+    color: #fff;
+    text-shadow: 0 0 10px var(--primary-glow), 0 0 20px var(--primary-glow), 0 0 40px var(--primary-glow);
+    animation: glow-pulse 2s infinite alternate;
+}
 
-/* MENUS - FORCE VERTICAL STACK */
+@keyframes glow-pulse {
+    from { text-shadow: 0 0 10px var(--primary-glow), 0 0 20px var(--primary-glow); }
+    to { text-shadow: 0 0 20px var(--primary-glow), 0 0 40px var(--primary-glow), 0 0 60px var(--primary-glow); }
+}
+
+.game-title { font-size: 3.2rem; text-align: center; margin-bottom: 35px; line-height: 0.9; letter-spacing: -2px; }
+.highlight { color: #fff; }
+
+/* MENUS */
 .menu-screen { position: fixed; inset: 0; background: rgba(0,0,0,0.97); display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 2000; padding: 20px; }
-.menu-content { display: flex; flex-direction: column; align-items: center; width: 100%; }
-.menu-buttons { display: flex; flex-direction: column; gap: 15px; width: 100%; align-items: center; }
+.menu-buttons { display: flex; flex-direction: column; gap: 15px; }
 
 .menu-btn { 
-    padding: 20px; width: 280px; border-radius: 10px; border: 1px solid rgba(255,255,255,0.1); 
+    padding: 20px; width: 300px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.1); 
     font-weight: 800; cursor: pointer; background: #1a1a1a; color: white; transition: 0.2s; 
-    text-transform: uppercase; letter-spacing: 1px;
+    text-transform: uppercase; letter-spacing: 2px;
 }
-.menu-btn.primary { background: var(--primary); border: none; box-shadow: 0 4px 15px var(--primary-glow); }
+.menu-btn.primary { background: var(--primary); border: none; box-shadow: 0 0 20px var(--primary-glow); }
 .menu-btn.shop-gold { background: var(--gold); color: black; border: none; }
 
-/* SHOP */
+/* LARGER SKIN GRID */
+.skin-container.large-grid { 
+    background: var(--card); padding: 30px; border-radius: 20px; 
+    border: 1px solid #222; margin-bottom: 20px; width: 360px;
+}
+.skin-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 15px; }
+.skin-btn { width: 70px; height: 70px; border-radius: 15px; border: 3px solid transparent; cursor: pointer; transition: 0.2s; }
+.skin-btn.locked { opacity: 0.05; filter: brightness(0); }
+.skin-btn.selected { border-color: white; transform: scale(1.1); box-shadow: 0 0 20px rgba(255,255,255,0.4); }
+
+/* SHOP & CALIBRATION (Kept as requested) */
 .shop-grid-container { display: flex; gap: 20px; width: 100%; max-width: 850px; margin-bottom: 25px; }
 .shop-card { flex: 1; background: var(--card); padding: 20px; border-radius: 15px; border: 1px solid #222; }
-.shop-item { 
-    display: flex; justify-content: space-between; padding: 14px; background: #000; 
-    border: 1px solid #333; color: white; width: 100%; margin-bottom: 10px; 
-    cursor: pointer; border-radius: 8px; font-weight: bold;
-}
-.shop-item.equipped { border-color: var(--gold); background: rgba(255, 193, 7, 0.05); }
-.price.owned { color: var(--gold); font-size: 11px; letter-spacing: 1px; }
+.shop-item { display: flex; justify-content: space-between; padding: 14px; background: #000; border: 1px solid #333; color: white; width: 100%; margin-bottom: 10px; cursor: pointer; border-radius: 8px; font-weight: bold; }
+.shop-item.equipped { border-color: var(--gold); }
 
-/* CALIBRATION */
 .calibration-box { background: var(--card); padding: 30px; border-radius: 15px; border: 1px solid #222; width: 340px; margin-bottom: 20px; }
 .setting-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; border-bottom: 1px solid #222; padding-bottom: 10px; }
 .bind-btn { background: #222; color: var(--primary); border: 1px solid #444; padding: 12px; border-radius: 8px; font-weight: 900; min-width: 120px; cursor: pointer; }
 
-/* SKINS */
-.skin-container { background: var(--card); padding: 25px; border-radius: 20px; border: 1px solid #222; margin-bottom: 20px; }
-.skin-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 15px; }
-.skin-btn { width: 65px; height: 65px; border-radius: 14px; border: 3px solid transparent; cursor: pointer; transition: 0.2s; }
-.skin-btn.locked { opacity: 0.1; filter: contrast(0); }
-.skin-btn.selected { border-color: white; transform: scale(1.15); box-shadow: 0 0 15px rgba(255,255,255,0.3); }
-
-.pagination-controls { display: flex; align-items: center; gap: 25px; margin-bottom: 20px; }
-.nav-btn { 
-    background: var(--primary); color: white; border: none; padding: 12px 24px; 
-    border-radius: 8px; cursor: pointer; font-weight: 900; box-shadow: 0 4px 10px var(--primary-glow);
-}
+/* CONTROLS */
+.controls { position: fixed; bottom: 30px; width: 92%; max-width: 500px; display: flex; justify-content: space-between; align-items: center; z-index: 100; pointer-events: none; }
+.dir-pad { display: flex; gap: 15px; pointer-events: auto; }
+.control-btn { pointer-events: auto; width: 70px; height: 70px; border-radius: 15px; background: rgba(255,255,255,0.07); color: white; border: 1px solid rgba(255,255,255,0.2); font-size: 20px; font-weight: bold; backdrop-filter: blur(10px); }
+.jump-btn { width: 100px; height: 100px; border-radius: 50%; background: var(--primary); box-shadow: 0 0 25px var(--primary-glow); border: none; }
