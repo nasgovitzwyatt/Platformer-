@@ -10,16 +10,16 @@ const menus = {
     mobile: document.getElementById("mobileControls")
 };
 
-// --- CREATIVE SKINS DATA ---
+// --- ELITE SKINS ---
 const skinData = [
     {id: 's0', type: 'color', val: '#ff5722', req: 0},
     {id: 's1', type: 'color', val: '#2196f3', req: 50},
-    {id: 's2', type: 'pattern', val: 'galaxy', req: 150}, // Blue with white dots
-    {id: 's3', type: 'pattern', val: 'matrix', req: 300}, // Black with green lines
+    {id: 's2', type: 'pattern', val: 'galaxy', req: 150},
+    {id: 's3', type: 'pattern', val: 'matrix', req: 300},
     {id: 's4', type: 'color', val: '#ffffff', req: 400},
-    {id: 's5', type: 'pattern', val: 'gold', req: 600},   // Shiny gold gradient
-    {id: 's6', type: 'pattern', val: 'void', req: 800},   // Pure black + white stroke
-    {id: 's7', type: 'pattern', val: 'neon', req: 1000},  // Pulsing magenta
+    {id: 's5', type: 'pattern', val: 'gold', req: 600},
+    {id: 's6', type: 'pattern', val: 'void', req: 800},
+    {id: 's7', type: 'pattern', val: 'neon', req: 1000},
 ];
 
 let tokens = parseFloat(localStorage.getItem("tokens")) || 0; 
@@ -38,7 +38,7 @@ let platforms = [], items = [], keys = {}, gameActive = false, cameraY = 0, maxH
 let player = { x: 185, y: 550, velX: 0, velY: 0, jumping: false, onIce: false, jumpCount: 0 };
 let lastTime = 0;
 
-// --- UI LOGIC ---
+// --- MENU CONTROL ---
 function showMenu(key) {
     Object.values(menus).forEach(m => m.style.display = "none");
     if (key === 'none') {
@@ -51,9 +51,10 @@ function showMenu(key) {
     if (key === 'shop') renderShop();
 }
 
-// Calibration Logic Fix
+// Fixed Binding Logic
 ['Jump','Left','Right'].forEach(act => {
-    document.getElementById(`bind${act}`).onclick = () => {
+    document.getElementById(`bind${act}`).onclick = (e) => {
+        e.stopPropagation();
         bindingKey = act;
         document.getElementById(`bind${act}`).innerText = "...";
     };
@@ -120,39 +121,43 @@ window.buyItem = function(type, name, price) {
     }
 };
 
-// --- GAME ENGINE ---
+// --- GAME CORE ---
 function init() {
     platforms = []; items = []; maxHeight = 0;
-    // Start Floor - Fixed at bottom
-    platforms.push({ x: 0, y: 580, width: 400, height: 20, type: 'normal' });
-    player = { x: 185, y: 550, velX: 0, velY: 0, jumping: false, onIce: false, jumpCount: 0 };
-    cameraY = 0; 
+    // Solid Ground
+    platforms.push({ x: 0, y: 580, width: 400, height: 20, type: 'normal', moving: false });
+    player = { x: 185, y: 540, velX: 0, velY: 0, jumping: false, onIce: false, jumpCount: 0 };
+    cameraY = 0;
 
-    // Procedural Generation with Dynamic Difficulty
+    // Generation with scaling difficulty
     for(let i=0; i<1000; i++) {
-        let diff = Math.min(i / 100, 1); // 0 to 1 scaling difficulty
-        let lastY = (platforms.length ? platforms[platforms.length-1].y : 580) - (100 + (diff * 40) + Math.random() * 30);
+        let diff = Math.min(i / 150, 1);
+        let lastY = (platforms[platforms.length-1].y) - (110 + (diff * 40) + Math.random() * 30);
+        let width = 85 - (diff * 35);
         
-        let width = 80 - (diff * 30); // Platforms get smaller
         let type = 'normal';
         let r = Math.random();
-        
-        if (r > 0.9) type = 'tramp';
-        else if (r > 0.8) type = 'ice';
-        else if (r > 0.7 && diff > 0.3) type = 'moving'; // Moving platforms start after some height
-        
+        if (r > 0.92) type = 'tramp';
+        else if (r > 0.84) type = 'ice';
+        else if (r > 0.76) type = 'crumble';
+
+        // Chance to be moving increases with height
+        let isMoving = Math.random() < (diff * 0.7);
+
         platforms.push({ 
             x: Math.random() * (400 - width), 
             y: lastY, 
             width: width, 
             height: 12, 
             type: type, 
-            dir: 1, 
-            speed: 1 + (diff * 2) 
+            moving: isMoving,
+            dir: Math.random() > 0.5 ? 1 : -1,
+            speed: 1 + (diff * 2.5),
+            crack: 1,
+            isCracking: false
         });
 
-        // More coins based on multiplier
-        if (Math.random() > 0.4) items.push({ x: Math.random() * 380, y: lastY - 30, collected: false });
+        if (Math.random() > 0.5) items.push({ x: Math.random() * 380, y: lastY - 30, collected: false });
     }
 
     gameActive = true; showMenu('none'); 
@@ -165,7 +170,6 @@ function loop(t) {
     const dt = Math.min((t - lastTime) / 16.67, 1.5);
     lastTime = t;
 
-    // Movement
     let friction = player.onIce ? 0.98 : 0.82;
     if (keys[config.Left]) player.velX -= 1.1 * dt;
     if (keys[config.Right]) player.velX += 1.1 * dt;
@@ -174,11 +178,10 @@ function loop(t) {
 
     if (player.x < -30) player.x = 400; if (player.x > 400) player.x = -30;
 
-    // Platform logic
     let onIce = false;
     platforms.forEach(p => {
-        // Moving Platform Logic
-        if (p.type === 'moving') {
+        // Shared Movement Logic
+        if (p.moving) {
             p.x += p.dir * p.speed * dt;
             if (p.x <= 0 || p.x + p.width >= 400) p.dir *= -1;
         }
@@ -188,13 +191,14 @@ function loop(t) {
             else { 
                 player.velY = 0; player.y = p.y - 30; player.jumpCount = 0; 
                 onIce = (p.type === 'ice');
-                if (p.type === 'moving') player.x += p.dir * p.speed * dt;
+                if (p.type === 'crumble') p.isCracking = true;
+                if (p.moving) player.x += p.dir * p.speed * dt;
             }
         }
+        if (p.isCracking) p.crack -= 0.03 * dt;
     });
-    player.onIce = onIce;
+    platforms = platforms.filter(p => p.type !== 'crumble' || p.crack > 0);
 
-    // Coins
     items.forEach(it => {
         if (!it.collected) {
             let d = Math.sqrt((player.x+15 - it.x)**2 + (player.y+15 - it.y)**2);
@@ -202,17 +206,14 @@ function loop(t) {
         }
     });
 
-    // Camera follow
     if (player.y < cameraY + 300) cameraY = player.y - 300;
-    
     let score = Math.max(0, Math.floor((550 - player.y)/10));
     if (score > maxHeight) { 
         maxHeight = score; 
         document.getElementById("scoreBoard").innerText = `${maxHeight}m`; 
         if (maxHeight > highScore) { highScore = maxHeight; localStorage.setItem("highScore", highScore); }
     }
-    
-    if (player.y > cameraY + 800) { gameActive = false; showMenu('main'); updateUI(); }
+    if (player.y > cameraY + 850) { gameActive = false; showMenu('main'); updateUI(); }
     
     draw();
     requestAnimationFrame(loop);
@@ -226,47 +227,49 @@ function draw() {
 
     ctx.save(); ctx.translate(0, -cameraY);
     platforms.forEach(p => {
-        if (p.type === 'moving') ctx.fillStyle = "#9c27b0";
-        else if (p.type === 'ice') ctx.fillStyle = "#00d2ff";
+        if (p.type === 'ice') ctx.fillStyle = "#00d2ff";
         else if (p.type === 'tramp') ctx.fillStyle = "#ff1744";
+        else if (p.type === 'crumble') ctx.fillStyle = `rgba(255,100,0,${p.crack})`;
         else ctx.fillStyle = "#333";
         ctx.fillRect(p.x, p.y, p.width, p.height);
+        if (p.moving) { // Small indicator for moving blocks
+            ctx.fillStyle = "rgba(255,255,255,0.3)";
+            ctx.fillRect(p.x, p.y + p.height - 3, p.width, 3);
+        }
     });
 
-    // Coins
     ctx.fillStyle = "#ffd700";
     items.forEach(it => { if(!it.collected) { ctx.beginPath(); ctx.arc(it.x, it.y, 8, 0, Math.PI*2); ctx.fill(); } });
     
-    // Creative Skin Draw
+    // Draw Skin
     if (selectedSkin.type === 'color') ctx.fillStyle = selectedSkin.val;
     else if (selectedSkin.val === 'galaxy') {
-        ctx.fillStyle = '#1a237e';
-        ctx.fillRect(player.x, player.y, 30, 30);
-        ctx.fillStyle = '#fff';
-        for(let i=0; i<5; i++) ctx.fillRect(player.x + (i*5)%25, player.y + (i*7)%25, 2, 2);
+        ctx.fillStyle = '#1a237e'; ctx.fillRect(player.x, player.y, 30, 30);
+        ctx.fillStyle = '#fff'; for(let i=0; i<5; i++) ctx.fillRect(player.x + (i*5)%25, player.y + (i*7)%25, 2, 2);
     } else if (selectedSkin.val === 'matrix') {
-        ctx.fillStyle = '#000';
-        ctx.fillRect(player.x, player.y, 30, 30);
-        ctx.fillStyle = '#0f0';
-        ctx.fillRect(player.x+5, player.y+2, 2, 20);
+        ctx.fillStyle = '#000'; ctx.fillRect(player.x, player.y, 30, 30);
+        ctx.fillStyle = '#0f0'; ctx.fillRect(player.x+5, player.y+2, 2, 20);
     } else if (selectedSkin.val === 'gold') {
         let g = ctx.createLinearGradient(player.x, player.y, player.x+30, player.y+30);
-        g.addColorStop(0, '#ffd700'); g.addColorStop(1, '#ff8f00');
-        ctx.fillStyle = g;
+        g.addColorStop(0, '#ffd700'); g.addColorStop(1, '#ff8f00'); ctx.fillStyle = g;
     }
-    
-    if (selectedSkin.type !== 'pattern' || selectedSkin.val !== 'galaxy') ctx.fillRect(player.x, player.y, 30, 30);
+    if (selectedSkin.type !== 'pattern' || (selectedSkin.val !== 'galaxy' && selectedSkin.val !== 'matrix')) ctx.fillRect(player.x, player.y, 30, 30);
     if (selectedSkin.val === 'void') { ctx.strokeStyle = "#fff"; ctx.strokeRect(player.x, player.y, 30, 30); }
     
     ctx.restore();
 }
 
 function handleJump() {
-    const limit = powerupStatus.DoubleJump ? 2 : 1;
-    if (player.jumpCount < limit) { player.velY = -14; player.jumpCount++; }
+    const limit = (ownedItems.includes('pow-DoubleJump') || powerupStatus.DoubleJump) ? 2 : 1;
+    if (player.jumpCount < limit) { player.velY = -14.5; player.jumpCount++; }
 }
 
 document.getElementById("startBtn").onclick = () => init();
+document.getElementById("shopBtn").onclick = () => showMenu('shop');
+document.getElementById("skinMenuBtn").onclick = () => showMenu('skins');
+document.getElementById("settingsBtn").onclick = () => showMenu('settings');
+document.querySelectorAll(".close-btn").forEach(b => b.onclick = () => showMenu('main'));
+
 document.getElementById("leftBtn").ontouchstart = (e) => { e.preventDefault(); keys[config.Left] = true; };
 document.getElementById("leftBtn").ontouchend = () => keys[config.Left] = false;
 document.getElementById("rightBtn").ontouchstart = (e) => { e.preventDefault(); keys[config.Right] = true; };
