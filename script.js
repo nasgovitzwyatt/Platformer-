@@ -11,7 +11,7 @@ const menus = {
     mobile: document.getElementById("mobileControls")
 };
 
-// --- ELITE SKINS DATA ---
+// --- DATA ---
 const skinData = [
     {id: 's0', n: 'Red', val: '#ff0000', req: 50, type: 'color'},
     {id: 's1', n: 'Blue', val: '#0000ff', req: 100, type: 'color'},
@@ -78,7 +78,7 @@ function showMenu(key) {
 
 window.addEventListener("keydown", (e) => {
     if (bindingKey) { 
-        e.preventDefault(); // FIX: Prevents flicker/scroll on Space
+        e.preventDefault(); 
         config[bindingKey] = e.code; 
         localStorage.setItem("controls", JSON.stringify(config)); 
         updateSettingsUI(); 
@@ -96,7 +96,6 @@ function updateSettingsUI() {
     document.getElementById("bindRight").innerText = config.Right.toUpperCase().replace("KEY","").replace("ARROW","");
 }
 
-// --- SHOP & SKINS ---
 function renderShop() {
     const envList = document.getElementById("envList");
     const techList = document.getElementById("techList");
@@ -165,12 +164,6 @@ window.buyItem = function(type, name, price) {
 };
 
 // --- ENGINE ---
-function createParticles(x, y, color) {
-    for(let i=0; i<12; i++) {
-        particles.push({ x, y, vx: (Math.random()-0.5)*6, vy: (Math.random()-0.5)*6, life: 1.0, color, size: Math.random()*4+1 });
-    }
-}
-
 function init() {
     platforms = []; items = []; debris = []; particles = []; trailParticles = []; weatherParticles = []; maxHeight = 0;
     platforms.push({ x: -100, y: 580, width: 600, height: 100, type: 'normal', moving: false, crack: 1 });
@@ -181,11 +174,8 @@ function init() {
         let lastY = (platforms[platforms.length-1].y) - (110 + (diff * 45) + Math.random() * 40);
         let width = Math.max(85 - (diff * 40), 45);
         let type = Math.random() > 0.9 ? 'tramp' : (Math.random() > 0.8 ? 'ice' : (Math.random() > 0.7 ? 'conveyor' : (Math.random() > 0.55 ? 'crumble' : 'normal')));
-        
         let plat = { x: Math.random()*(400-width), y: lastY, width, height: 14, type, moving: Math.random()<(diff*0.9), dir: Math.random()>0.5?1:-1, speed: 1.5+(diff*4.5), crack: 1, isCracking: false };
         platforms.push(plat);
-        
-        // FIX: Coins strictly 40% chance on platforms
         if (Math.random() < 0.40) items.push({ x: plat.x+(width/2)-8, y: lastY-30, collected: false });
     }
     gameActive = true; showMenu('none'); lastTime = performance.now(); loop();
@@ -222,7 +212,14 @@ function loop(t) {
         if (p.isCracking) {
             p.crack -= 0.04 * dt;
             if (p.crack <= 0) {
-                createParticles(p.x + p.width/2, p.y, "#ff5722"); // FIX: Restoration of particles
+                // RESTORED BREAKING PARTICLES
+                for(let i = 0; i < 15; i++) {
+                    particles.push({
+                        x: p.x + p.width / 2, y: p.y,
+                        vx: (Math.random() - 0.5) * 6, vy: (Math.random() - 0.5) * 6,
+                        life: 1.0, color: "#ff5722", size: Math.random() * 4 + 2
+                    });
+                }
                 debris.push({x: p.x, y: p.y, w: p.width/2, h: p.height, vx: -2, vy: 1, rot: 0, vr: -0.1});
                 debris.push({x: p.x + p.width/2, y: p.y, w: p.width/2, h: p.height, vx: 2, vy: 1, rot: 0, vr: 0.1});
             }
@@ -231,9 +228,14 @@ function loop(t) {
     player.onIce = onIce;
     platforms = platforms.filter(p => p.crack > 0);
     debris.forEach(d => { d.x += d.vx; d.y += d.vy; d.vy += 0.2; d.rot += d.vr; });
-    particles.forEach(p => { p.x += p.vx; p.y += p.vy; p.life -= 0.02; });
     weatherParticles.forEach(wp => { wp.y += wp.vy; wp.x += wp.vx; });
     
+    // PARTICLE PHYSICS
+    particles.forEach(p => {
+        p.x += p.vx; p.y += p.vy; p.life -= 0.02;
+    });
+    particles = particles.filter(p => p.life > 0);
+
     items.forEach(it => {
         if (!it.collected) {
             let dx = (player.x+15)-it.x, dy = (player.y+15)-it.y, d = Math.sqrt(dx*dx+dy*dy);
@@ -273,15 +275,17 @@ function draw() {
         else { ctx.fillStyle = "#333"; ctx.fillRect(p.x, p.y, p.width, p.height); }
     });
     debris.forEach(d => { ctx.save(); ctx.translate(d.x+d.w/2, d.y+d.h/2); ctx.rotate(d.rot); ctx.fillStyle = "#ff5722"; ctx.fillRect(-d.w/2,-d.h/2,d.w,d.h); ctx.restore(); });
+    
+    // DRAW BREAKING PARTICLES
     particles.forEach(p => { ctx.globalAlpha = p.life; ctx.fillStyle = p.color; ctx.fillRect(p.x, p.y, p.size, p.size); });
     ctx.globalAlpha = 1;
+
     ctx.fillStyle = "#ffd700"; items.forEach(it => { if(!it.collected) { ctx.beginPath(); ctx.arc(it.x, it.y, 8, 0, Math.PI*2); ctx.fill(); } });
     
-    // Player Draw Fix for Foggy Skin
     ctx.globalAlpha = powerupStatus.GhostMode ? 0.5 : 1.0;
     if (selectedSkin.type === 'glass' || selectedSkin.val.includes('rgba')) {
         ctx.fillStyle = selectedSkin.val; ctx.fillRect(player.x, player.y, 30, 30);
-        ctx.strokeStyle = "white"; ctx.lineWidth = 2; ctx.strokeRect(player.x, player.y, 30, 30); // Glass Border
+        ctx.strokeStyle = "white"; ctx.lineWidth = 2; ctx.strokeRect(player.x, player.y, 30, 30);
     } else if (selectedSkin.val === 'rainbow') { ctx.fillStyle = `hsl(${Date.now()/10%360}, 100%, 50%)`; ctx.fillRect(player.x, player.y, 30, 30); }
     else { ctx.fillStyle = selectedSkin.val; ctx.fillRect(player.x, player.y, 30, 30); }
     ctx.restore();
