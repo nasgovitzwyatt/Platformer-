@@ -10,7 +10,7 @@ const menus = {
     mobile: document.getElementById("mobileControls")
 };
 
-// --- ELITE SKINS DATA ---
+// --- ELITE SKINS DATA (EXOTIC UPDATED) ---
 const skinData = [
     {id: 's0', n: 'Red', val: '#ff0000', req: 50, type: 'color'},
     {id: 's1', n: 'Blue', val: '#0000ff', req: 100, type: 'color'},
@@ -21,16 +21,19 @@ const skinData = [
     {id: 's6', n: 'Gold', val: '#ffd700', req: 350, type: 'color'},
     {id: 's7', n: 'Rainbow', val: 'rainbow', req: 400, type: 'pattern'},
     {id: 's8', n: 'Space', val: '#1a1a2e', req: 450, type: 'pattern'},
-    {id: 's9', n: 'Transparent', val: 'rgba(255,255,255,0.1)', req: 500, type: 'void'},
+    {id: 's9', n: 'Foggy', val: 'rgba(255,255,255,0.2)', req: 500, type: 'glass'}, // FIXED TRANSPARENT
     {id: 's10', n: 'Ocean', val: '#0077be', req: 550, type: 'color'},
     {id: 's11', n: 'Gradient', val: 'linear-gradient', req: 600, type: 'pattern'},
     {id: 's12', n: 'Void', val: 'void', req: 700, type: 'pattern'},
-    {id: 's13', n: 'Nebula', val: '#4b0082', req: 1000, type: 'pattern'},
-    {id: 's14', n: 'Magma', val: '#ff4500', req: 1500, type: 'pattern'},
-    {id: 's15', n: 'Matrix', val: '#003300', req: 2000, type: 'pattern'},
-    {id: 's16', n: 'Diamond', val: '#b9f2ff', req: 3000, type: 'color'},
-    {id: 's17', n: 'Solar', val: '#ffcc00', req: 4000, type: 'pattern'},
-    {id: 's18', n: 'Dark Matter', val: '#000000', req: 5000, type: 'pattern'}
+    {id: 's13', n: 'Comet', val: '#00ffff', req: 1000, type: 'trail'}, // EXOTIC
+    {id: 's14', n: 'Inferno', val: '#ff4500', req: 1500, type: 'trail'}, // EXOTIC
+    {id: 's15', n: 'Ghost', val: 'rgba(150,150,255,0.4)', req: 2000, type: 'trail'} // EXOTIC
+];
+
+const envs = [
+    {n:'White', m:1, p:0}, {n:'Blue', m:2.5, p:50}, {n:'Forest', m:5, p:100}, 
+    {n:'Lava', m:8, p:200}, {n:'Neon', m:15, p:350}, {n:'Void', m:50, p:500},
+    {n:'Mars', m:75, p:1000}, {n:'Cyber', m:100, p:2500}
 ];
 
 // --- STATE ---
@@ -45,14 +48,13 @@ let currentEnvPage = 0;
 const envsPerPage = 4;
 let activeEnv = "White";
 let envMultiplier = 1;
-let powerupStatus = JSON.parse(localStorage.getItem("powerups")) || { DoubleJump: false, Magnet: false, AntiGrav: false, GhostMode: false, TokenSurge: false, SlowMo: false, Shield: false };
+let powerupStatus = JSON.parse(localStorage.getItem("powerups")) || { DoubleJump: false, Magnet: false, AntiGrav: false, GhostMode: false, Shield: false };
 let ownedItems = JSON.parse(localStorage.getItem("ownedItems")) || ["bg-White"];
 
-let platforms = [], items = [], particles = [], debris = [], keys = {}, gameActive = false, cameraY = 0, maxHeight = 0;
+let platforms = [], items = [], particles = [], debris = [], trailParticles = [], keys = {}, gameActive = false, cameraY = 0, maxHeight = 0;
 let player = { x: 185, y: 540, velX: 0, velY: 0, jumping: false, onIce: false, jumpCount: 0, shieldActive: false };
 let lastTime = 0;
 
-// --- NOTIFICATION SYSTEM ---
 function notify(text) {
     const n = document.createElement("div");
     n.className = "unlock-notify";
@@ -61,7 +63,6 @@ function notify(text) {
     setTimeout(() => n.remove(), 3000);
 }
 
-// --- UI & CALIBRATION ---
 function showMenu(key) {
     Object.values(menus).forEach(m => { if(m) m.style.display = "none"; });
     if (key === 'none') {
@@ -74,6 +75,7 @@ function showMenu(key) {
     if (key === 'shop') renderShop();
 }
 
+// --- CALIBRATION FIX ---
 ['Jump','Left','Right'].forEach(act => {
     const btn = document.getElementById(`bind${act}`);
     btn.onclick = (e) => {
@@ -85,7 +87,7 @@ function showMenu(key) {
 
 window.addEventListener("keydown", (e) => {
     if (bindingKey) {
-        e.preventDefault(); // FIX: Stops Space bar flicker
+        e.preventDefault(); 
         config[bindingKey] = e.code;
         localStorage.setItem("controls", JSON.stringify(config));
         updateSettingsUI();
@@ -95,7 +97,6 @@ window.addEventListener("keydown", (e) => {
     if (e.code === config.Jump) handleJump();
     keys[e.code] = true;
 });
-
 window.addEventListener("keyup", (e) => keys[e.code] = false);
 
 function updateSettingsUI() {
@@ -104,20 +105,16 @@ function updateSettingsUI() {
     document.getElementById("bindRight").innerText = config.Right.toUpperCase().replace("KEY","").replace("ARROW","");
 }
 
-// --- SHOP & SKINS ---
+// --- SHOP PAGINATION FIX ---
 function renderShop() {
     const envList = document.getElementById("envList");
     const techList = document.getElementById("techList");
     envList.innerHTML = ""; techList.innerHTML = "";
     
-    const shopEnvs = [
-        {n:'White', m:1, p:0}, {n:'Blue', m:2.5, p:50}, {n:'Forest', m:5, p:100}, 
-        {n:'Lava', m:8, p:200}, {n:'Neon', m:15, p:350}, {n:'Void', m:50, p:500},
-        {n:'Mars', m:75, p:1000}, {n:'Cyber', m:100, p:2500}
-    ];
-
     const start = currentEnvPage * envsPerPage;
-    shopEnvs.slice(start, start + envsPerPage).forEach(e => {
+    const visibleEnvs = envs.slice(start, start + envsPerPage);
+
+    visibleEnvs.forEach(e => {
         const isOwned = ownedItems.includes(`bg-${e.n}`);
         const btn = document.createElement("button");
         btn.className = `shop-item ${activeEnv === e.n ? 'equipped' : ''}`;
@@ -125,6 +122,8 @@ function renderShop() {
         btn.onclick = () => buyItem('bg', e.n, e.p);
         envList.appendChild(btn);
     });
+    
+    document.getElementById("envPageNum").innerText = `${currentEnvPage + 1}/${Math.ceil(envs.length/envsPerPage)}`;
 
     const techs = [
         {id:'DoubleJump', n:'Double Jump', p:150}, 
@@ -142,6 +141,13 @@ function renderShop() {
         techList.appendChild(btn);
     });
 }
+
+document.getElementById("nextEnvPage").onclick = () => {
+    if ((currentEnvPage + 1) * envsPerPage < envs.length) { currentEnvPage++; renderShop(); }
+};
+document.getElementById("prevEnvPage").onclick = () => {
+    if (currentEnvPage > 0) { currentEnvPage--; renderShop(); }
+};
 
 function renderSkins() {
     const grid = document.getElementById("skinGrid");
@@ -176,8 +182,9 @@ window.buyItem = function(type, name, price) {
     if (ownedItems.includes(id)) {
         if (type === 'bg') { 
             activeEnv = name; 
-            const eMap = {White:1, Blue:2.5, Forest:5, Lava:8, Neon:15, Void:50, Mars:75, Cyber:100};
-            envMultiplier = eMap[name]; renderShop(); 
+            const found = envs.find(e => e.n === name);
+            envMultiplier = found ? found.m : 1;
+            renderShop(); 
         }
         return;
     }
@@ -191,16 +198,22 @@ window.buyItem = function(type, name, price) {
 
 // --- ENGINE ---
 function init() {
-    platforms = []; items = []; debris = []; particles = []; maxHeight = 0;
+    platforms = []; items = []; debris = []; particles = []; trailParticles = []; maxHeight = 0;
     platforms.push({ x: -100, y: 580, width: 600, height: 100, type: 'normal', moving: false, crack: 1 });
-    player = { x: 185, y: 500, velX: 0, velY: 0, jumping: false, onIce: false, jumpCount: 0, shieldActive: true };
+    player = { x: 185, y: 500, velX: 0, velY: 0, jumping: false, onIce: false, jumpCount: 0, shieldActive: powerupStatus.Shield };
     cameraY = 0;
 
     for(let i=0; i<1500; i++) {
-        let diff = Math.min(i / 200, 1);
+        let diff = Math.min(i / 300, 1);
         let lastY = (platforms[platforms.length-1].y) - (110 + (diff * 45) + Math.random() * 40);
         let width = 85 - (diff * 40);
-        let type = Math.random() > 0.85 ? 'tramp' : (Math.random() > 0.70 ? 'ice' : (Math.random() > 0.50 ? 'crumble' : 'normal'));
+        
+        let type = 'normal';
+        let r = Math.random();
+        if (r > 0.90) type = 'tramp';
+        else if (r > 0.80) type = 'ice';
+        else if (r > 0.70) type = 'conveyor'; // NEW CONVEYOR
+        else if (r > 0.55) type = 'crumble';
 
         let plat = { 
             x: Math.random() * (400 - width), y: lastY, width: width, height: 14, 
@@ -209,11 +222,7 @@ function init() {
             crack: 1, isCracking: false
         };
         platforms.push(plat);
-        
-        // FIX: Coins strictly 40% chance on platforms
-        if (Math.random() < 0.40) {
-            items.push({ x: plat.x + (plat.width/2) - 8, y: plat.y - 30, collected: false });
-        }
+        if (Math.random() < 0.40) items.push({ x: plat.x + (plat.width/2) - 8, y: plat.y - 30, collected: false });
     }
     gameActive = true; showMenu('none'); 
     lastTime = performance.now();
@@ -235,6 +244,15 @@ function loop(t) {
 
     if (player.x < -30) player.x = 400; if (player.x > 400) player.x = -30;
 
+    // Trail Particles for Exotic Skins
+    if (selectedSkin.type === 'trail' && Math.random() > 0.5) {
+        trailParticles.push({
+            x: player.x + 15, y: player.y + 15,
+            vx: (Math.random()-0.5), vy: (Math.random()-0.5),
+            life: 1.0, color: selectedSkin.val
+        });
+    }
+
     let onIce = false;
     platforms.forEach(p => {
         if (p.moving) {
@@ -247,6 +265,7 @@ function loop(t) {
             else { 
                 player.velY = 0; player.y = p.y - 30; player.jumpCount = 0; 
                 onIce = (p.type === 'ice');
+                if (p.type === 'conveyor') player.velX += 4 * dt; // CONVEYOR FORCE
                 if (p.type === 'crumble') p.isCracking = true;
                 if (p.moving) player.x += p.dir * p.speed * dt;
             }
@@ -259,9 +278,11 @@ function loop(t) {
             }
         }
     });
+    player.onIce = onIce;
     platforms = platforms.filter(p => p.crack > 0);
     debris.forEach(d => { d.x += d.vx; d.y += d.vy; d.vy += 0.2; d.rot += d.vr; });
-    debris = debris.filter(d => d.y < cameraY + 650);
+    trailParticles.forEach(tp => { tp.x += tp.vx; tp.y += tp.vy; tp.life -= 0.03; });
+    trailParticles = trailParticles.filter(tp => tp.life > 0);
 
     items.forEach(it => {
         if (!it.collected) {
@@ -273,32 +294,18 @@ function loop(t) {
     });
 
     if (player.y < cameraY + 300) cameraY = player.y - 300;
-    
     let score = Math.max(0, Math.floor((540 - player.y)/10));
     if (score > maxHeight) { 
         maxHeight = score; 
         document.getElementById("scoreBoard").innerText = `${maxHeight}m`; 
-        
-        // UNLOCK NOTIFICATIONS
-        skinData.forEach(s => {
-            if (maxHeight >= s.req && highScore < s.req) {
-                notify(`NEW SKIN UNLOCKED: ${s.n}!`);
-            }
-        });
-
+        skinData.forEach(s => { if (maxHeight >= s.req && highScore < s.req) notify(`NEW SKIN UNLOCKED: ${s.n}!`); });
         if (maxHeight > highScore) { highScore = maxHeight; localStorage.setItem("highScore", highScore); }
     }
     
     if (player.y > cameraY + 850) {
-        if (powerupStatus.Shield && player.shieldActive) {
-            player.velY = -30;
-            player.shieldActive = false;
-            notify("SHIELD USED!");
-        } else {
-            gameActive = false; showMenu('main'); updateUI(); 
-        }
+        if (player.shieldActive) { player.velY = -30; player.shieldActive = false; notify("SHIELD USED!"); }
+        else { gameActive = false; showMenu('main'); updateUI(); }
     }
-    
     draw();
     requestAnimationFrame(loop);
 }
@@ -314,13 +321,19 @@ function draw() {
     platforms.forEach(p => {
         if (p.type === 'ice') ctx.fillStyle = "#00d2ff";
         else if (p.type === 'tramp') ctx.fillStyle = "#ff1744";
+        else if (p.type === 'conveyor') ctx.fillStyle = "#888888"; // GREY CONVEYOR
         else if (p.type === 'crumble') {
-            const r = 255 * (1 - p.crack);
-            const g = 255 * p.crack;
+            const r = 255 * (1 - p.crack), g = 255 * p.crack;
             ctx.fillStyle = `rgb(${r},${g},0)`;
         }
         else ctx.fillStyle = "#333";
         ctx.fillRect(p.x, p.y, p.width, p.height);
+        
+        // Conveyor visual arrows
+        if (p.type === 'conveyor') {
+            ctx.fillStyle = "rgba(255,255,255,0.3)";
+            for(let i=0; i<p.width; i+=20) ctx.fillRect(p.x + ((i + Date.now()/20)%p.width), p.y + 4, 10, 6);
+        }
     });
 
     debris.forEach(d => {
@@ -329,22 +342,32 @@ function draw() {
         ctx.restore();
     });
 
+    trailParticles.forEach(tp => {
+        ctx.globalAlpha = tp.life; ctx.fillStyle = tp.color;
+        ctx.beginPath(); ctx.arc(tp.x, tp.y, 4, 0, Math.PI*2); ctx.fill();
+    });
+    ctx.globalAlpha = 1;
+
     ctx.fillStyle = "#ffd700";
     items.forEach(it => { if(!it.collected) { ctx.beginPath(); ctx.arc(it.x, it.y, 8, 0, Math.PI*2); ctx.fill(); } });
     
-    // Player Draw
+    // Player Render
     ctx.globalAlpha = powerupStatus.GhostMode ? 0.5 : 1.0;
-    if (selectedSkin.val === 'rainbow') {
+    if (selectedSkin.type === 'glass') {
+        ctx.fillStyle = selectedSkin.val;
+        ctx.fillRect(player.x, player.y, 30, 30);
+        ctx.strokeStyle = "white"; ctx.lineWidth = 2;
+        ctx.strokeRect(player.x, player.y, 30, 30); // BORDER FOR GLASS
+    } else if (selectedSkin.val === 'rainbow') {
         ctx.fillStyle = `hsl(${Date.now()/10%360}, 100%, 50%)`;
+        ctx.fillRect(player.x, player.y, 30, 30);
     } else if (selectedSkin.val === 'void') {
-        ctx.fillStyle = "black";
-        ctx.strokeStyle = "white";
-        ctx.lineWidth = 2;
-        ctx.strokeRect(player.x, player.y, 30, 30);
+        ctx.fillStyle = "black"; ctx.fillRect(player.x, player.y, 30, 30);
+        ctx.strokeStyle = "white"; ctx.lineWidth = 2; ctx.strokeRect(player.x, player.y, 30, 30);
     } else {
         ctx.fillStyle = selectedSkin.val;
+        ctx.fillRect(player.x, player.y, 30, 30);
     }
-    ctx.fillRect(player.x, player.y, 30, 30);
     ctx.globalAlpha = 1.0;
     
     ctx.restore();
@@ -360,7 +383,6 @@ document.getElementById("shopBtn").onclick = () => showMenu('shop');
 document.getElementById("skinMenuBtn").onclick = () => showMenu('skins');
 document.getElementById("settingsBtn").onclick = () => showMenu('settings');
 document.querySelectorAll(".close-btn").forEach(b => b.onclick = () => showMenu('main'));
-
 document.getElementById("jumpBtn").ontouchstart = (e) => { e.preventDefault(); handleJump(); };
 
 function updateUI() {
