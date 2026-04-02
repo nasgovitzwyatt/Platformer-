@@ -12,63 +12,53 @@ body {
     overflow: hidden; touch-action: none; color: white;
 }
 
-#ui { position: absolute; top: 20px; display: flex; gap: 10px; z-index: 10; pointer-events: none; }
-#scoreBoard, #highScoreBoard, #tokenBoard { 
-    background: rgba(0,0,0,0.85); padding: 12px 18px; border-radius: 10px; 
-    border: 1px solid rgba(255,255,255,0.1); font-weight: bold; font-size: 14px;
-}
-
-canvas { background: #000; border: 3px solid #1a1a1a; border-radius: 12px; }
-
-/* GLOWING RED TITLE */
+/* CENTERED TITLE */
+.title-wrapper { width: 100%; display: flex; justify-content: center; margin-bottom: 40px; }
 .elite-glow {
     color: #fff;
-    text-shadow: 0 0 10px var(--primary-glow), 0 0 20px var(--primary-glow), 0 0 40px var(--primary-glow);
-    animation: glow-pulse 2s infinite alternate;
+    text-shadow: 0 0 15px var(--primary-glow);
+    animation: glow-pulse 1.5s infinite alternate;
+    text-align: center;
 }
-
 @keyframes glow-pulse {
     from { text-shadow: 0 0 10px var(--primary-glow), 0 0 20px var(--primary-glow); }
-    to { text-shadow: 0 0 20px var(--primary-glow), 0 0 40px var(--primary-glow), 0 0 60px var(--primary-glow); }
+    to { text-shadow: 0 0 20px var(--primary-glow), 0 0 40px var(--primary-glow); }
 }
+.game-title { font-size: 3.5rem; line-height: 1; letter-spacing: -1px; margin: 0; }
 
-.game-title { font-size: 3.2rem; text-align: center; margin-bottom: 35px; line-height: 0.9; letter-spacing: -2px; }
-.highlight { color: #fff; }
-
-/* MENUS */
-.menu-screen { position: fixed; inset: 0; background: rgba(0,0,0,0.97); display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 2000; padding: 20px; }
-.menu-buttons { display: flex; flex-direction: column; gap: 15px; }
-
-.menu-btn { 
-    padding: 20px; width: 300px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.1); 
-    font-weight: 800; cursor: pointer; background: #1a1a1a; color: white; transition: 0.2s; 
-    text-transform: uppercase; letter-spacing: 2px;
+/* PAGINATION */
+.pagination-row { display: flex; align-items: center; gap: 20px; margin-bottom: 20px; }
+.p-btn {
+    background: #1a1a1a; color: white; border: 1px solid #333;
+    padding: 10px 20px; border-radius: 8px; font-weight: bold; cursor: pointer;
 }
-.menu-btn.primary { background: var(--primary); border: none; box-shadow: 0 0 20px var(--primary-glow); }
-.menu-btn.shop-gold { background: var(--gold); color: black; border: none; }
+.p-btn:hover { background: var(--primary); box-shadow: 0 0 10px var(--primary-glow); }
 
-/* LARGER SKIN GRID */
-.skin-container.large-grid { 
-    background: var(--card); padding: 30px; border-radius: 20px; 
-    border: 1px solid #222; margin-bottom: 20px; width: 360px;
+/* SKINS */
+.skin-btn { 
+    width: 70px; height: 70px; border-radius: 12px; border: 3px solid transparent; 
+    cursor: pointer; transition: 0.2s; position: relative; display: flex; align-items: center; justify-content: center;
 }
+.skin-btn.locked { opacity: 0.25; filter: saturate(0.4); }
+.skin-btn.locked::after { content: "🔒"; font-size: 20px; filter: grayscale(0); opacity: 1; position: absolute; }
+.skin-btn.selected { border-color: white; transform: scale(1.1); box-shadow: 0 0 15px rgba(255,255,255,0.3); }
+
+/* SHOP MULTIPLIER STYLING */
+.multiplier-tag { color: var(--gold); font-size: 0.8em; margin-left: 5px; font-weight: 900; }
+
+#ui { position: absolute; top: 20px; display: flex; gap: 10px; z-index: 10; pointer-events: none; }
+#scoreBoard, #highScoreBoard, #tokenBoard { background: rgba(0,0,0,0.85); padding: 12px 18px; border-radius: 10px; border: 1px solid rgba(255,255,255,0.1); font-weight: bold; }
+canvas { background: #000; border: 3px solid #1a1a1a; border-radius: 12px; }
+
+.menu-screen { position: fixed; inset: 0; background: rgba(0,0,0,0.98); display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 2000; padding: 20px; }
+.menu-btn { padding: 20px; width: 300px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.1); font-weight: 800; cursor: pointer; background: #1a1a1a; color: white; transition: 0.2s; text-transform: uppercase; margin-bottom: 15px; }
+.menu-btn.primary { background: var(--primary); box-shadow: 0 0 20px var(--primary-glow); }
+.menu-btn.shop-gold { background: var(--gold); color: black; }
 .skin-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 15px; }
-.skin-btn { width: 70px; height: 70px; border-radius: 15px; border: 3px solid transparent; cursor: pointer; transition: 0.2s; }
-.skin-btn.locked { opacity: 0.05; filter: brightness(0); }
-.skin-btn.selected { border-color: white; transform: scale(1.1); box-shadow: 0 0 20px rgba(255,255,255,0.4); }
-
-/* SHOP & CALIBRATION (Kept as requested) */
-.shop-grid-container { display: flex; gap: 20px; width: 100%; max-width: 850px; margin-bottom: 25px; }
+.shop-grid-container { display: flex; gap: 20px; width: 100%; max-width: 800px; }
 .shop-card { flex: 1; background: var(--card); padding: 20px; border-radius: 15px; border: 1px solid #222; }
-.shop-item { display: flex; justify-content: space-between; padding: 14px; background: #000; border: 1px solid #333; color: white; width: 100%; margin-bottom: 10px; cursor: pointer; border-radius: 8px; font-weight: bold; }
-.shop-item.equipped { border-color: var(--gold); }
-
-.calibration-box { background: var(--card); padding: 30px; border-radius: 15px; border: 1px solid #222; width: 340px; margin-bottom: 20px; }
-.setting-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; border-bottom: 1px solid #222; padding-bottom: 10px; }
-.bind-btn { background: #222; color: var(--primary); border: 1px solid #444; padding: 12px; border-radius: 8px; font-weight: 900; min-width: 120px; cursor: pointer; }
-
-/* CONTROLS */
-.controls { position: fixed; bottom: 30px; width: 92%; max-width: 500px; display: flex; justify-content: space-between; align-items: center; z-index: 100; pointer-events: none; }
-.dir-pad { display: flex; gap: 15px; pointer-events: auto; }
-.control-btn { pointer-events: auto; width: 70px; height: 70px; border-radius: 15px; background: rgba(255,255,255,0.07); color: white; border: 1px solid rgba(255,255,255,0.2); font-size: 20px; font-weight: bold; backdrop-filter: blur(10px); }
-.jump-btn { width: 100px; height: 100px; border-radius: 50%; background: var(--primary); box-shadow: 0 0 25px var(--primary-glow); border: none; }
+.shop-item { display: flex; justify-content: space-between; padding: 14px; background: #000; border: 1px solid #333; color: white; width: 100%; margin-bottom: 10px; cursor: pointer; border-radius: 8px; }
+.shop-item.equipped { border-color: var(--gold); background: rgba(255, 193, 7, 0.05); }
+.calibration-box { background: var(--card); padding: 30px; border-radius: 15px; border: 1px solid #222; width: 340px; }
+.setting-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; }
+.bind-btn { background: #222; color: var(--primary); border: 1px solid #444; padding: 12px; border-radius: 8px; min-width: 100px; }
