@@ -5,7 +5,9 @@ const menus = {
     main: document.getElementById("mainMenu"),
     shop: document.getElementById("shopMenu"),
     skins: document.getElementById("skinMenu"),
-    settings: document.getElementById("settingsModal")
+    settings: document.getElementById("settingsModal"),
+    ui: document.getElementById("ui"),
+    mobile: document.getElementById("mobileControls")
 };
 
 // --- DATA ---
@@ -31,10 +33,18 @@ let platforms = [], items = [], keys = {}, gameActive = false, cameraY = 0, maxH
 let player = { x: 185, y: 540, velX: 0, velY: 0, jumping: false, onIce: false, jumpCount: 0 };
 let lastTime = 0;
 
-// --- UI FUNCTIONS ---
+// --- UI CONTROL ---
 function showMenu(key) {
+    // Hide all menus
     Object.values(menus).forEach(m => m.style.display = "none");
-    if (menus[key]) menus[key].style.display = "flex";
+    
+    if (key === 'none') {
+        menus.ui.style.display = "flex";
+        menus.mobile.style.display = "flex";
+    } else if (menus[key]) {
+        menus[key].style.display = "flex";
+    }
+
     if (key === 'skins') renderSkins();
     if (key === 'shop') renderShop();
     if (key === 'settings') updateSettingsUI();
@@ -46,6 +56,7 @@ document.getElementById("skinMenuBtn").onclick = () => showMenu('skins');
 document.getElementById("settingsBtn").onclick = () => showMenu('settings');
 document.querySelectorAll(".close-btn").forEach(b => b.onclick = () => { bindingKey = null; showMenu('main'); });
 
+// --- SHOP / SKINS / SETTINGS (Functions Kept Intact) ---
 function renderShop() {
     const envList = document.getElementById("envList");
     const techList = document.getElementById("techList");
@@ -97,38 +108,37 @@ window.buyItem = function(type, name, price) {
 
 function setMultiplier(env) { const m = { "White": 1, "Blue": 2.5, "Forest": 5, "Midnight": 10, "Void": 50 }; envMultiplier = m[env] || 1; }
 
-// FIX: Keybinding logic
 function updateSettingsUI() {
     document.getElementById("bindJump").innerText = config.Jump.replace("Arrow","");
     document.getElementById("bindLeft").innerText = config.Left.replace("Arrow","");
     document.getElementById("bindRight").innerText = config.Right.replace("Arrow","");
 }
-['Jump','Left','Right'].forEach(act => {
-    document.getElementById(`bind${act}`).onclick = () => { 
-        bindingKey = act; 
-        document.getElementById(`bind${act}`).innerText = "..."; 
-    };
-});
 
 // --- ENGINE ---
 function init() {
+    // Reset Canvas and Game Objects
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
     platforms = []; items = []; maxHeight = 0;
-    // FIX: Starting Floor Rendering (Thin base, not big bar)
+    
+    // Starting floor
     platforms.push({ x: 0, y: 580, width: 400, height: 20, type: 'normal' });
     
-    // FIX: Snap camera to player immediately
-    player = { x: 185, y: 550, velX: 0, velY: 0, jumping: false, onIce: false, jumpCount: 0 };
+    // Reset Player & Camera
+    player = { x: 185, y: 540, velX: 0, velY: 0, jumping: false, onIce: false, jumpCount: 0 };
     cameraY = player.y - 450; 
     
+    // Generate map
     for(let i=0; i<1500; i++) {
         let lastY = platforms[platforms.length - 1].y - (105 + Math.random() * 50);
         let type = Math.random() > 0.9 ? 'tramp' : (Math.random() > 0.8 ? 'ice' : (Math.random() > 0.7 ? 'crumble' : 'normal'));
         platforms.push({ x: Math.random() * 320, y: lastY, width: 85, height: 14, type, crack: 1, isCracking: false });
-        
-        // FIX: Reduced coin spawning rate (Balance)
-        if(Math.random() > 0.6) items.push({ x: Math.random() * 380, y: lastY - 30, collected: false });
+        if(Math.random() > 0.65) items.push({ x: Math.random() * 380, y: lastY - 30, collected: false });
     }
-    gameActive = true; showMenu('none'); lastTime = performance.now(); loop();
+
+    gameActive = true; 
+    showMenu('none'); 
+    lastTime = performance.now(); 
+    requestAnimationFrame(loop);
 }
 
 function loop(t) {
@@ -172,27 +182,30 @@ function loop(t) {
         document.getElementById("scoreBoard").innerText = `${maxHeight}m`; 
         if (maxHeight > highScore) { highScore = maxHeight; localStorage.setItem("highScore", highScore); updateUI(); } 
     }
-    if (player.y > cameraY + 750) { gameActive = false; showMenu('main'); }
+    
+    if (player.y > cameraY + 800) { 
+        gameActive = false; 
+        showMenu('main'); 
+    }
+    
     draw();
     requestAnimationFrame(loop);
 }
 
 function draw() {
-    ctx.clearRect(0,0,400,600);
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
     const bgs = { "White": "#fdfdfd", "Blue": "#e3f2fd", "Forest": "#e8f5e9", "Midnight": "#0a0a25", "Void": "#000" };
     ctx.fillStyle = bgs[activeEnv];
     ctx.fillRect(0,0,400,600);
 
     ctx.save(); ctx.translate(0, -cameraY);
     platforms.forEach(p => {
-        // FIX: Crumble platforms turn orange before breaking
         ctx.fillStyle = p.type === 'ice' ? "#00d2ff" : (p.type === 'tramp' ? "#ff1744" : (p.type === 'crumble' ? `rgba(255, 120, 0, ${p.crack})` : "#222"));
         ctx.fillRect(p.x, p.y, p.width, p.height);
     });
     ctx.fillStyle = "#ffd700";
     items.forEach(it => { if(!it.collected) { ctx.beginPath(); ctx.arc(it.x, it.y, 8, 0, Math.PI*2); ctx.fill(); } });
     
-    // FIX: Player Layering
     ctx.fillStyle = playerColor === 'rainbow' ? `hsl(${Date.now()/10%360},100%,50%)` : playerColor;
     ctx.fillRect(player.x, player.y, 30, 30);
     if(playerColor === 'void') { ctx.strokeStyle = "#fff"; ctx.strokeRect(player.x, player.y, 30, 30); }
@@ -217,6 +230,7 @@ window.onkeydown = (e) => {
 };
 window.onkeyup = (e) => keys[e.code] = false;
 
+// Mobile Controls
 document.getElementById("leftBtn").ontouchstart = (e) => { e.preventDefault(); keys[config.Left] = true; };
 document.getElementById("leftBtn").ontouchend = () => keys[config.Left] = false;
 document.getElementById("rightBtn").ontouchstart = (e) => { e.preventDefault(); keys[config.Right] = true; };
@@ -228,4 +242,7 @@ function updateUI() {
     document.getElementById("highScoreBoard").innerText = `🏆 ${highScore}m`;
     localStorage.setItem("tokens", tokens);
 }
+
+// Ensure first state is Main Menu
+showMenu('main');
 updateUI();
