@@ -19,9 +19,13 @@ const skinData = [
     {id: 's4', type: 'color', val: '#ffffff', req: 450},
     {id: 's5', type: 'pattern', val: 'gold', req: 600},
     {id: 's6', type: 'pattern', val: 'void', req: 800},
-    {id: 's7', type: 'pattern', val: 'neon', req: 1000},
-    {id: 's8', type: 'color', val: '#e91e63', req: 1200},
-    {id: 's9', type: 'color', val: '#00bcd4', req: 1400}
+    {id: 's7', type: 'pattern', val: 'neon', req: 1000}
+];
+
+const envs = [
+    {n:'White', m:1, p:0}, {n:'Blue', m:2.5, p:50}, {n:'Forest', m:5, p:100}, 
+    {n:'Lava', m:8, p:200}, {n:'Neon', m:15, p:350}, {n:'Void', m:50, p:500},
+    {n:'Mars', m:75, p:1000}, {n:'Cyber', m:100, p:2500}
 ];
 
 let tokens = parseFloat(localStorage.getItem("tokens")) || 0; 
@@ -31,6 +35,9 @@ let config = JSON.parse(localStorage.getItem("controls")) || { Jump: "Space", Le
 let bindingKey = null;
 
 let currentSkinPage = 0;
+let currentEnvPage = 0;
+const envsPerPage = 4;
+
 let activeEnv = "White";
 let envMultiplier = 1;
 let powerupStatus = { DoubleJump: false, Magnet: false };
@@ -53,17 +60,49 @@ function showMenu(key) {
     if (key === 'shop') renderShop();
 }
 
+// FIX: CALIBRATION KEYBIND LOGIC
+['Jump','Left','Right'].forEach(act => {
+    const btn = document.getElementById(`bind${act}`);
+    btn.onclick = (e) => {
+        e.stopPropagation();
+        bindingKey = act;
+        btn.innerText = "PRESS ANY KEY";
+        btn.style.color = "white";
+    };
+});
+
+window.addEventListener("keydown", (e) => {
+    if (bindingKey) {
+        config[bindingKey] = e.code;
+        localStorage.setItem("controls", JSON.stringify(config));
+        updateSettingsUI();
+        bindingKey = null;
+        return;
+    }
+    if (e.code === config.Jump) handleJump();
+    keys[e.code] = true;
+});
+
+window.addEventListener("keyup", (e) => keys[e.code] = false);
+
+function updateSettingsUI() {
+    document.getElementById("bindJump").innerText = config.Jump.toUpperCase().replace("KEY","").replace("ARROW","");
+    document.getElementById("bindLeft").innerText = config.Left.toUpperCase().replace("KEY","").replace("ARROW","");
+    document.getElementById("bindRight").innerText = config.Right.toUpperCase().replace("KEY","").replace("ARROW","");
+    document.querySelectorAll(".bind-btn").forEach(b => b.style.color = "var(--primary)");
+}
+
+// --- SHOP PAGINATION ---
 function renderShop() {
     const envList = document.getElementById("envList");
     const techList = document.getElementById("techList");
     envList.innerHTML = ""; techList.innerHTML = "";
     
-    const envs = [
-        {n:'White', m:1, p:0}, {n:'Blue', m:2.5, p:50}, {n:'Forest', m:5, p:100}, 
-        {n:'Lava', m:8, p:200}, {n:'Neon', m:15, p:350}, {n:'Void', m:50, p:500}
-    ];
+    const start = currentEnvPage * envsPerPage;
+    const end = start + envsPerPage;
+    const visibleEnvs = envs.slice(start, end);
 
-    envs.forEach(e => {
+    visibleEnvs.forEach(e => {
         const isOwned = ownedItems.includes(`bg-${e.n}`);
         const btn = document.createElement("button");
         btn.className = `shop-item ${activeEnv === e.n ? 'equipped' : ''}`;
@@ -71,6 +110,8 @@ function renderShop() {
         btn.onclick = () => buyItem('bg', e.n, e.p);
         envList.appendChild(btn);
     });
+    
+    document.getElementById("envPageNum").innerText = `${currentEnvPage + 1}/${Math.ceil(envs.length/envsPerPage)}`;
 
     const techs = [{id:'DoubleJump', n:'Double Jump', p:150}, {id:'Magnet', n:'Token Magnet', p:250}];
     techs.forEach(t => {
@@ -82,6 +123,13 @@ function renderShop() {
         techList.appendChild(btn);
     });
 }
+
+document.getElementById("nextEnvPage").onclick = () => {
+    if ((currentEnvPage + 1) * envsPerPage < envs.length) { currentEnvPage++; renderShop(); }
+};
+document.getElementById("prevEnvPage").onclick = () => {
+    if (currentEnvPage > 0) { currentEnvPage--; renderShop(); }
+};
 
 function renderSkins() {
     const grid = document.getElementById("skinGrid");
@@ -101,8 +149,8 @@ window.buyItem = function(type, name, price) {
     if (ownedItems.includes(id)) {
         if (type === 'bg') { 
             activeEnv = name; 
-            const eMap = {White:1, Blue:2.5, Forest:5, Lava:8, Neon:15, Void:50};
-            envMultiplier = eMap[name]; 
+            const found = envs.find(e => e.n === name);
+            envMultiplier = found ? found.m : 1;
             renderShop(); 
         }
         return;
@@ -116,10 +164,8 @@ window.buyItem = function(type, name, price) {
 
 // --- ENGINE ---
 function createDebris(p) {
-    // Split platform in half
     debris.push({x: p.x, y: p.y, w: p.width/2, h: p.height, vx: -2, vy: 1, rot: 0, vr: -0.1});
     debris.push({x: p.x + p.width/2, y: p.y, w: p.width/2, h: p.height, vx: 2, vy: 1, rot: 0, vr: 0.1});
-    // Create particles
     for(let i=0; i<10; i++){
         particles.push({
             x: p.x + Math.random()*p.width, y: p.y, 
@@ -129,22 +175,21 @@ function createDebris(p) {
     }
 }
 
+// FIX: FLOOR INITIALIZATION
 function init() {
     platforms = []; items = []; debris = []; particles = []; maxHeight = 0;
-    platforms.push({ x: 0, y: 580, width: 400, height: 20, type: 'normal' });
-    player = { x: 185, y: 540, velX: 0, velY: 0, jumping: false, onIce: false, jumpCount: 0 };
+    
+    // Solid Ground - Make it wider and taller to prevent falling through at start
+    platforms.push({ x: -100, y: 580, width: 600, height: 100, type: 'normal', moving: false, crack: 1 });
+    
+    player = { x: 185, y: 500, velX: 0, velY: 0, jumping: false, onIce: false, jumpCount: 0 };
     cameraY = 0;
 
     for(let i=0; i<800; i++) {
         let diff = Math.min(i / 150, 1);
         let lastY = (platforms[platforms.length-1].y) - (110 + (diff * 45) + Math.random() * 40);
         let width = 85 - (diff * 40);
-        
-        let type = 'normal';
-        let r = Math.random();
-        if (r > 0.85) type = 'tramp';
-        else if (r > 0.70) type = 'ice';
-        else if (r > 0.50) type = 'crumble';
+        let type = Math.random() > 0.85 ? 'tramp' : (Math.random() > 0.70 ? 'ice' : (Math.random() > 0.50 ? 'crumble' : 'normal'));
 
         platforms.push({ 
             x: Math.random() * (400 - width), y: lastY, width: width, height: 14, 
@@ -152,7 +197,6 @@ function init() {
             dir: Math.random() > 0.5 ? 1 : -1, speed: 1 + (diff * 3),
             crack: 1, isCracking: false
         });
-
         if (Math.random() > 0.4) items.push({ x: Math.random() * 380, y: lastY - 30, collected: false });
     }
     gameActive = true; showMenu('none'); 
@@ -165,7 +209,6 @@ function loop(t) {
     const dt = Math.min((t - lastTime) / 16.67, 1.5);
     lastTime = t;
 
-    // Movement
     let friction = player.onIce ? 0.98 : 0.82;
     if (keys[config.Left]) player.velX -= 1.1 * dt;
     if (keys[config.Right]) player.velX += 1.1 * dt;
@@ -174,7 +217,6 @@ function loop(t) {
 
     if (player.x < -30) player.x = 400; if (player.x > 400) player.x = -30;
 
-    // Platforms
     let onIce = false;
     platforms.forEach(p => {
         if (p.moving) {
@@ -198,13 +240,11 @@ function loop(t) {
     });
     platforms = platforms.filter(p => p.crack > 0);
 
-    // Debris & Particles
     debris.forEach(d => { d.x += d.vx; d.y += d.vy; d.vy += 0.2; d.rot += d.vr; });
     particles.forEach(p => { p.x += p.vx; p.y += p.vy; p.life -= 0.02; });
     debris = debris.filter(d => d.y < cameraY + 650);
     particles = particles.filter(p => p.life > 0);
 
-    // Items
     items.forEach(it => {
         if (!it.collected) {
             let dx = (player.x + 15) - it.x, dy = (player.y + 15) - it.y;
@@ -229,7 +269,7 @@ function loop(t) {
 
 function draw() {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
-    const bgs = { White: "#fdfdfd", Blue: "#e3f2fd", Forest: "#e8f5e9", Lava: "#3e2723", Neon: "#1a1a2e", Void: "#000" };
+    const bgs = { White: "#fdfdfd", Blue: "#e3f2fd", Forest: "#e8f5e9", Lava: "#3e2723", Neon: "#1a1a2e", Void: "#000", Mars: "#5d4037", Cyber: "#001a1a" };
     ctx.fillStyle = bgs[activeEnv];
     ctx.fillRect(0,0,400,600);
 
@@ -239,7 +279,6 @@ function draw() {
         if (p.type === 'ice') ctx.fillStyle = "#00d2ff";
         else if (p.type === 'tramp') ctx.fillStyle = "#ff1744";
         else if (p.type === 'crumble') {
-            // GREEN TO ORANGE TO RED
             const r = 255 * (1 - p.crack);
             const g = 255 * p.crack;
             ctx.fillStyle = `rgb(${r},${g},0)`;
@@ -249,25 +288,19 @@ function draw() {
     });
 
     debris.forEach(d => {
-        ctx.save();
-        ctx.translate(d.x + d.w/2, d.y + d.h/2);
-        ctx.rotate(d.rot);
-        ctx.fillStyle = "#ff5722";
-        ctx.fillRect(-d.w/2, -d.h/2, d.w, d.h);
+        ctx.save(); ctx.translate(d.x + d.w/2, d.y + d.h/2); ctx.rotate(d.rot);
+        ctx.fillStyle = "#ff5722"; ctx.fillRect(-d.w/2, -d.h/2, d.w, d.h);
         ctx.restore();
     });
 
     particles.forEach(p => {
-        ctx.globalAlpha = p.life;
-        ctx.fillStyle = p.color;
-        ctx.fillRect(p.x, p.y, 4, 4);
+        ctx.globalAlpha = p.life; ctx.fillStyle = p.color; ctx.fillRect(p.x, p.y, 4, 4);
     });
     ctx.globalAlpha = 1;
 
     ctx.fillStyle = "#ffd700";
     items.forEach(it => { if(!it.collected) { ctx.beginPath(); ctx.arc(it.x, it.y, 8, 0, Math.PI*2); ctx.fill(); } });
     
-    // Player
     ctx.fillStyle = selectedSkin.type === 'color' ? selectedSkin.val : '#222';
     if (selectedSkin.val === 'galaxy') {
         ctx.fillStyle = '#1a237e'; ctx.fillRect(player.x, player.y, 30, 30);
@@ -296,10 +329,6 @@ document.getElementById("skinMenuBtn").onclick = () => showMenu('skins');
 document.getElementById("settingsBtn").onclick = () => showMenu('settings');
 document.querySelectorAll(".close-btn").forEach(b => b.onclick = () => showMenu('main'));
 
-document.getElementById("leftBtn").ontouchstart = (e) => { e.preventDefault(); keys[config.Left] = true; };
-document.getElementById("leftBtn").ontouchend = () => keys[config.Left] = false;
-document.getElementById("rightBtn").ontouchstart = (e) => { e.preventDefault(); keys[config.Right] = true; };
-document.getElementById("rightBtn").ontouchend = () => keys[config.Right] = false;
 document.getElementById("jumpBtn").ontouchstart = (e) => { e.preventDefault(); handleJump(); };
 
 function updateUI() {
