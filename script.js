@@ -28,50 +28,37 @@ let powerupStatus = { DoubleJump: false, Magnet: false };
 let ownedItems = JSON.parse(localStorage.getItem("ownedItems")) || ["bg-White"];
 
 let platforms = [], items = [], keys = {}, gameActive = false, cameraY = 0, maxHeight = 0;
-let player = { x: 185, y: 550, velX: 0, velY: 0, jumping: false, onIce: false, jumpCount: 0 };
+let player = { x: 185, y: 540, velX: 0, velY: 0, jumping: false, onIce: false, jumpCount: 0 };
 let lastTime = 0;
 
-// --- UI ---
+// --- UI FUNCTIONS ---
 function showMenu(key) {
     Object.values(menus).forEach(m => m.style.display = "none");
     if (menus[key]) menus[key].style.display = "flex";
     if (key === 'skins') renderSkins();
     if (key === 'shop') renderShop();
+    if (key === 'settings') updateSettingsUI();
 }
 
 document.getElementById("startBtn").onclick = () => init();
 document.getElementById("shopBtn").onclick = () => showMenu('shop');
 document.getElementById("skinMenuBtn").onclick = () => showMenu('skins');
 document.getElementById("settingsBtn").onclick = () => showMenu('settings');
-document.querySelectorAll(".close-btn").forEach(b => b.onclick = () => showMenu('main'));
+document.querySelectorAll(".close-btn").forEach(b => b.onclick = () => { bindingKey = null; showMenu('main'); });
 
 function renderShop() {
     const envList = document.getElementById("envList");
     const techList = document.getElementById("techList");
     envList.innerHTML = ""; techList.innerHTML = "";
-    
-    // BACKDROP MULTIPLIERS DISPLAYED HERE
-    const envs = [
-        {n:'White', m:1, p:0}, 
-        {n:'Blue', m:2.5, p:50}, 
-        {n:'Forest', m:5, p:100}, 
-        {n:'Midnight', m:10, p:250}, 
-        {n:'Void', m:50, p:500}
-    ];
-
+    const envs = [{n:'White', m:1, p:0}, {n:'Blue', m:2.5, p:50}, {n:'Forest', m:5, p:100}, {n:'Midnight', m:10, p:250}, {n:'Void', m:50, p:500}];
     envs.forEach(e => {
         const isOwned = ownedItems.includes(`bg-${e.n}`);
-        const isEquipped = activeEnv === e.n;
         const btn = document.createElement("button");
-        btn.className = `shop-item ${isEquipped ? 'equipped' : ''}`;
-        btn.innerHTML = `
-            <div>${e.n} <span class="multiplier-tag">${e.m}x</span></div> 
-            <span class="price">${isEquipped ? 'EQUIPPED' : (isOwned ? 'OWNED' : e.p)}</span>
-        `;
+        btn.className = `shop-item ${activeEnv === e.n ? 'equipped' : ''}`;
+        btn.innerHTML = `<span>${e.n} (${e.m}x)</span> <span class="price">${activeEnv === e.n ? 'EQUIPPED' : (isOwned ? 'OWNED' : e.p)}</span>`;
         btn.onclick = () => buyItem('bg', e.n, e.p);
         envList.appendChild(btn);
     });
-
     const techs = [{id:'DoubleJump', n:'Double Jump', p:150}, {id:'Magnet', n:'Magnet', p:200}];
     techs.forEach(t => {
         const isOwned = ownedItems.includes(`pow-${t.id}`);
@@ -108,29 +95,38 @@ window.buyItem = function(type, name, price) {
     if (tokens >= price) { tokens -= price; ownedItems.push(id); if (type === 'bg') { activeEnv = name; setMultiplier(name); } else powerupStatus[name] = true; updateUI(); renderShop(); }
 };
 
-function setMultiplier(env) { 
-    const m = { "White": 1, "Blue": 2.5, "Forest": 5, "Midnight": 10, "Void": 50 }; 
-    envMultiplier = m[env] || 1; 
+function setMultiplier(env) { const m = { "White": 1, "Blue": 2.5, "Forest": 5, "Midnight": 10, "Void": 50 }; envMultiplier = m[env] || 1; }
+
+// FIX: Keybinding logic
+function updateSettingsUI() {
+    document.getElementById("bindJump").innerText = config.Jump.replace("Arrow","");
+    document.getElementById("bindLeft").innerText = config.Left.replace("Arrow","");
+    document.getElementById("bindRight").innerText = config.Right.replace("Arrow","");
 }
+['Jump','Left','Right'].forEach(act => {
+    document.getElementById(`bind${act}`).onclick = () => { 
+        bindingKey = act; 
+        document.getElementById(`bind${act}`).innerText = "..."; 
+    };
+});
 
 // --- ENGINE ---
 function init() {
     platforms = []; items = []; maxHeight = 0;
-    platforms.push({ x: 0, y: 580, width: 400, height: 100, type: 'normal' });
+    // FIX: Starting Floor Rendering (Thin base, not big bar)
+    platforms.push({ x: 0, y: 580, width: 400, height: 20, type: 'normal' });
     
-    // FORCE PLAYER POSITION
-    player = { x: 185, y: 540, velX: 0, velY: 0, jumping: false, onIce: false, jumpCount: 0 };
-    cameraY = player.y - 400; 
+    // FIX: Snap camera to player immediately
+    player = { x: 185, y: 550, velX: 0, velY: 0, jumping: false, onIce: false, jumpCount: 0 };
+    cameraY = player.y - 450; 
     
     for(let i=0; i<1500; i++) {
         let lastY = platforms[platforms.length - 1].y - (105 + Math.random() * 50);
         let type = Math.random() > 0.9 ? 'tramp' : (Math.random() > 0.8 ? 'ice' : (Math.random() > 0.7 ? 'crumble' : 'normal'));
         platforms.push({ x: Math.random() * 320, y: lastY, width: 85, height: 14, type, crack: 1, isCracking: false });
         
-        // MORE TOKENS (Spawn cluster)
-        for(let j=0; j<4; j++) {
-            if(Math.random() > 0.4) items.push({ x: Math.random() * 380, y: lastY - (Math.random() * 60), collected: false });
-        }
+        // FIX: Reduced coin spawning rate (Balance)
+        if(Math.random() > 0.6) items.push({ x: Math.random() * 380, y: lastY - 30, collected: false });
     }
     gameActive = true; showMenu('none'); lastTime = performance.now(); loop();
 }
@@ -163,7 +159,7 @@ function loop(t) {
         if (!it.collected) {
             let dx = (player.x + 15) - it.x, dy = (player.y + 15) - it.y;
             let d = Math.sqrt(dx*dx + dy*dy);
-            if (powerupStatus.Magnet && d < 160) { it.x += (dx/d)*6 * dt; it.y += (dy/d)*6 * dt; }
+            if (powerupStatus.Magnet && d < 150) { it.x += (dx/d)*6 * dt; it.y += (dy/d)*6 * dt; }
             if (d < 35) { it.collected = true; tokens += (1 * envMultiplier); updateUI(); }
         }
     });
@@ -189,13 +185,14 @@ function draw() {
 
     ctx.save(); ctx.translate(0, -cameraY);
     platforms.forEach(p => {
-        ctx.fillStyle = p.type === 'ice' ? "#00d2ff" : (p.type === 'tramp' ? "#ff1744" : (p.type === 'crumble' ? `rgba(255,100,0,${p.crack})` : "#222"));
+        // FIX: Crumble platforms turn orange before breaking
+        ctx.fillStyle = p.type === 'ice' ? "#00d2ff" : (p.type === 'tramp' ? "#ff1744" : (p.type === 'crumble' ? `rgba(255, 120, 0, ${p.crack})` : "#222"));
         ctx.fillRect(p.x, p.y, p.width, p.height);
     });
     ctx.fillStyle = "#ffd700";
     items.forEach(it => { if(!it.collected) { ctx.beginPath(); ctx.arc(it.x, it.y, 8, 0, Math.PI*2); ctx.fill(); } });
     
-    // THE PLAYER RENDER
+    // FIX: Player Layering
     ctx.fillStyle = playerColor === 'rainbow' ? `hsl(${Date.now()/10%360},100%,50%)` : playerColor;
     ctx.fillRect(player.x, player.y, 30, 30);
     if(playerColor === 'void') { ctx.strokeStyle = "#fff"; ctx.strokeRect(player.x, player.y, 30, 30); }
@@ -208,7 +205,13 @@ function handleJump() {
 }
 
 window.onkeydown = (e) => {
-    if (bindingKey) { config[bindingKey] = e.code; bindingKey = null; updateUI(); return; }
+    if (bindingKey) { 
+        config[bindingKey] = e.code; 
+        bindingKey = null; 
+        updateSettingsUI(); 
+        localStorage.setItem("controls", JSON.stringify(config)); 
+        return; 
+    }
     if (e.code === config.Jump) handleJump();
     keys[e.code] = true;
 };
