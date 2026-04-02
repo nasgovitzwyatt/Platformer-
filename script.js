@@ -232,7 +232,6 @@ function loop(t) {
     const dt = Math.min((t - lastTime) / 16.67, 1.5);
     lastTime = t;
 
-    // --- WEATHER LOGIC ---
     if (activeEnv === 'Forest' || activeEnv === 'Blue') {
         if (Math.random() > 0.8) {
             weatherParticles.push({
@@ -255,7 +254,6 @@ function loop(t) {
 
     if (player.x < -30) player.x = 400; if (player.x > 400) player.x = -30;
 
-    // Exotic Trail Skins
     if (selectedSkin.type === 'trail' && Math.random() > 0.4) {
         trailParticles.push({
             x: player.x + 15, y: player.y + 15,
@@ -284,7 +282,7 @@ function loop(t) {
         if (p.isCracking) {
             p.crack -= 0.04 * dt;
             if (p.crack <= 0) {
-                // ADDED PARTICLES HERE
+                // Particle Burst
                 for(let i=0; i<15; i++) {
                     particles.push({
                         x: p.x + p.width/2,
@@ -292,7 +290,7 @@ function loop(t) {
                         vx: (Math.random() - 0.5) * 6,
                         vy: (Math.random() - 0.5) * 6,
                         life: 1.0,
-                        color: "rgb(255, 120, 0)", // Orange-red explosion
+                        color: "rgb(255, 120, 0)",
                         size: Math.random() * 4 + 2
                     });
                 }
@@ -307,12 +305,8 @@ function loop(t) {
     trailParticles.forEach(tp => { tp.x += tp.vx; tp.y += tp.vy; tp.life -= 0.03; });
     weatherParticles.forEach(wp => { wp.y += wp.vy; wp.x += wp.vx; });
     
-    // UPDATE PARTICLES PHYSICS
     particles.forEach(p => {
-        p.x += p.vx;
-        p.y += p.vy;
-        p.vy += 0.2; // Gravity for particles
-        p.life -= 0.02; // Fading
+        p.x += p.vx; p.y += p.vy; p.vy += 0.2; p.life -= 0.02;
     });
     particles = particles.filter(p => p.life > 0);
     
@@ -347,7 +341,6 @@ function loop(t) {
 
 function draw() {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
-    
     const bgs = { 
         White: "#fdfdfd", Blue: "#e3f2fd", Forest: "#e8f5e9", Lava: "#3e2723", 
         Neon: "#1a1a2e", Void: "#000", Mars: "#5d4037", Cyber: "#001a1a" 
@@ -364,7 +357,6 @@ function draw() {
     }
 
     ctx.save(); ctx.translate(0, -cameraY);
-    
     weatherParticles.forEach(wp => {
         ctx.fillStyle = wp.type === 'rain' ? "#aab" : "#fff";
         ctx.fillRect(wp.x, wp.y, wp.size, wp.size * (wp.type === 'rain' ? 5 : 1));
@@ -394,13 +386,9 @@ function draw() {
         ctx.restore();
     });
 
-    // DRAW FALLING PARTICLES
     particles.forEach(p => {
-        ctx.save();
-        ctx.globalAlpha = p.life;
-        ctx.fillStyle = p.color;
-        ctx.fillRect(p.x, p.y, p.size, p.size);
-        ctx.restore();
+        ctx.save(); ctx.globalAlpha = p.life; ctx.fillStyle = p.color;
+        ctx.fillRect(p.x, p.y, p.size, p.size); ctx.restore();
     });
 
     trailParticles.forEach(tp => {
@@ -421,13 +409,10 @@ function draw() {
 
     ctx.globalAlpha = powerupStatus.GhostMode ? 0.5 : 1.0;
     if (selectedSkin.type === 'glass') {
-        ctx.fillStyle = selectedSkin.val;
-        ctx.fillRect(pX, pY, 30, 30);
-        ctx.strokeStyle = "white"; ctx.lineWidth = 2;
-        ctx.strokeRect(pX, pY, 30, 30);
+        ctx.fillStyle = selectedSkin.val; ctx.fillRect(pX, pY, 30, 30);
+        ctx.strokeStyle = "black"; ctx.lineWidth = 3; ctx.strokeRect(pX, pY, 30, 30);
     } else if (selectedSkin.val === 'rainbow') {
-        ctx.fillStyle = `hsl(${Date.now()/10%360}, 100%, 50%)`;
-        ctx.fillRect(pX, pY, 30, 30);
+        ctx.fillStyle = `hsl(${Date.now()/10%360}, 100%, 50%)`; ctx.fillRect(pX, pY, 30, 30);
     } else if (selectedSkin.val === 'void') {
         ctx.fillStyle = "black"; ctx.fillRect(pX, pY, 30, 30);
         ctx.strokeStyle = "white"; ctx.lineWidth = 2; ctx.strokeRect(pX, pY, 30, 30);
@@ -436,11 +421,9 @@ function draw() {
         g.addColorStop(0, "#ff0080"); g.addColorStop(1, "#00baff");
         ctx.fillStyle = g; ctx.fillRect(pX, pY, 30, 30);
     } else {
-        ctx.fillStyle = selectedSkin.val;
-        ctx.fillRect(pX, pY, 30, 30);
+        ctx.fillStyle = selectedSkin.val; ctx.fillRect(pX, pY, 30, 30);
     }
     ctx.globalAlpha = 1.0;
-    
     ctx.restore();
 }
 
@@ -453,6 +436,7 @@ document.getElementById("startBtn").onclick = () => init();
 document.getElementById("shopBtn").onclick = () => showMenu('shop');
 document.getElementById("skinMenuBtn").onclick = () => showMenu('skins');
 document.getElementById("settingsBtn").onclick = () => showMenu('settings');
+document.getElementById("leaderboardBtn").onclick = () => alert("Global Leaderboard: Syncing Elite Data...");
 document.querySelectorAll(".close-btn").forEach(b => b.onclick = () => showMenu('main'));
 document.getElementById("jumpBtn").ontouchstart = (e) => { e.preventDefault(); handleJump(); };
 
